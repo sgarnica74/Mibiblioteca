@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi Biblioteca</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="shelf-header">
+  <div class="header-top">
+    <h1>Mi Biblioteca</h1>
+    <p class="tagline">Los libros que he leído, los que estoy leyendo y los que esperan turno</p>
+  </div>
+
+  <div class="shelf" aria-label="Recomendaciones">
+    <div class="shelf-track" id="shelfTrack">
+      <!-- spines injected by JS -->
+    </div>
+    <button class="shelf-nav prev" id="shelfPrev" aria-label="Anterior">&#8249;</button>
+    <button class="shelf-nav next" id="shelfNext" aria-label="Siguiente">&#8250;</button>
+    <div class="shelf-ledge"></div>
+  </div>
+</header>
+
+<main>
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="reading" role="tab" aria-selected="true">
+      <span class="tab-index">I</span> Leídos &amp; Leyendo
+    </button>
+    <button class="tab" data-tab="wishlist" role="tab" aria-selected="false">
+      <span class="tab-index">II</span> Quiero leer
+    </button>
+  </nav>
+
+  <div class="controls-bar">
+    <div class="filter-group" id="filterGroup">
+      <button class="filter-btn active" data-filter="all">Todos</button>
+      <button class="filter-btn" data-filter="leyendo">Leyendo</button>
+      <button class="filter-btn" data-filter="leido">Leídos</button>
+    </div>
+    <div class="view-toggle-group">
+      <button class="view-btn active" id="btnViewGrid" title="Vista cuadrícula" aria-label="Vista cuadrícula">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+      </button>
+      <button class="view-btn" id="btnViewList" title="Vista lista" aria-label="Vista lista">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+      </button>
+    </div>
+  </div>
+
+  <section class="tab-panel active" id="panel-reading">
+    <div class="grid" id="gridReading"></div>
+    <p class="empty-state" id="emptyReading" hidden>Aún no has añadido ningún libro leído. Pulsa el botón <strong>+</strong> para empezar tu estantería.</p>
+  </section>
+
+  <section class="tab-panel" id="panel-wishlist">
+    <div class="grid" id="gridWishlist"></div>
+    <p class="empty-state" id="emptyWishlist" hidden>Tu lista de deseos está vacía. Añade libros que quieras leer más adelante.</p>
+  </section>
+</main>
+
+<button class="fab" id="btnAdd" aria-label="Añadir libro">+</button>
+
+<button class="fab-git" id="btnGitSettings" aria-label="Sincronización con GitHub" title="Sincronización con GitHub">
+  <svg width="28" height="28" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+  <span class="dot-status red" id="gitSyncStatus"></span>
+</button>
+
+<!-- MODAL: Add / Edit book -->
+<div class="modal-overlay" id="modalOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <button class="modal-close" id="modalClose" aria-label="Cerrar">&times;</button>
+    <h2 id="modalTitle">Añadir libro</h2>
+
+    <div class="field">
+      <label for="searchInput">Buscar libro</label>
+      <input type="text" id="searchInput" placeholder="Escribe el título del libro..." autocomplete="off">
+      <div class="autocomplete-list" id="autocompleteList" hidden></div>
+    </div>
+
+    <div class="cover-row">
+      <div class="cover-preview" id="coverPreview">
+        <span id="coverPlaceholder">Sin portada</span>
+        <img id="coverImg" alt="Portada del libro" hidden>
+      </div>
+      <div class="cover-actions">
+        <label class="pill-btn small" title="Sacar o subir una foto de la portada">
+          &#128247; Añadir foto
+          <input type="file" id="coverCamera" accept="image/*" capture="environment" hidden>
+        </label>
+        <input type="text" id="coverUrlInput" placeholder="o pega un enlace de imagen">
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="titleInput">Título</label>
+        <input type="text" id="titleInput" placeholder="Título del libro">
+      </div>
+      <div class="field small">
+        <label for="yearInput">Año</label>
+        <input type="text" id="yearInput" placeholder="2024" inputmode="numeric">
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="authorInput">Escritor/a</label>
+        <input type="text" id="authorInput" placeholder="Nombre del autor">
+      </div>
+      <div class="field">
+        <label for="publisherInput">Editorial</label>
+        <input type="text" id="publisherInput" placeholder="Editorial">
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="genreInput">Género</label>
+      <input type="text" id="genreInput" placeholder="Novela, ensayo, ciencia ficción...">
+    </div>
+
+    <div class="field">
+      <label>Estado</label>
+      <div class="status-choice" id="statusChoice">
+        <button type="button" class="status-opt" data-status="quiero_leer">Quiero leer</button>
+        <button type="button" class="status-opt" data-status="leyendo">Leyendo</button>
+        <button type="button" class="status-opt" data-status="leido">Leído</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Mi valoración <span class="optional">(puedes dejarla para más adelante)</span></label>
+      <div class="stars-input" id="starsInput">
+        <button type="button" class="star" data-val="1">&#9733;</button>
+        <button type="button" class="star" data-val="2">&#9733;</button>
+        <button type="button" class="star" data-val="3">&#9733;</button>
+        <button type="button" class="star" data-val="4">&#9733;</button>
+        <button type="button" class="star" data-val="5">&#9733;</button>
+        <button type="button" class="star-clear" id="starClear">borrar</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="commentsInput">Mis comentarios <span class="optional">(opcional)</span></label>
+      <textarea id="commentsInput" rows="3" placeholder="¿Qué te ha parecido?"></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" id="btnDelete" hidden>Eliminar libro</button>
+      <button class="btn-primary" id="btnSave">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: GitHub Configuration -->
+<div class="modal-overlay" id="gitModalOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="gitModalTitle">
+    <button class="modal-close" id="gitModalClose" aria-label="Cerrar">&times;</button>
+    <h2 id="gitModalTitle">Sincronización con GitHub</h2>
+    
+    <p class="modal-help-text">Guarda tu biblioteca directamente en un repositorio de GitHub. Si borras el historial de tu navegador, solo tendrás que volver a introducir tus credenciales aquí para recuperar todos tus libros.</p>
+    
+    <div class="field">
+      <label for="gitToken">Token de acceso personal (PAT)</label>
+      <input type="password" id="gitToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxx" autocomplete="new-password">
+      <p class="input-tip">Necesitas un token clásico o de grano fino con permisos de lectura y escritura en repositorios (<code>contents: write</code>).</p>
+    </div>
+    
+    <div class="field">
+      <label for="gitRepo">Repositorio</label>
+      <input type="text" id="gitRepo" placeholder="nombre-usuario/nombre-repositorio" autocomplete="off">
+      <p class="input-tip">El formato debe ser: <code>usuario/repositorio</code>.</p>
+    </div>
+    
+    <div class="field-row">
+      <div class="field">
+        <label for="gitBranch">Rama</label>
+        <input type="text" id="gitBranch" placeholder="main" value="main">
+      </div>
+      <div class="field">
+        <label for="gitPath">Ruta del archivo</label>
+        <input type="text" id="gitPath" placeholder="books.json" value="books.json">
+      </div>
+    </div>
+    
+    <div class="modal-actions">
+      <button class="btn-secondary" id="btnGitDisconnect">Desconectar</button>
+      <button class="btn-primary" id="btnGitSave">Conectar y Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<footer class="shelf-footer-main">
+  <div class="footer-content">
+    <p>&copy; Mi Biblioteca — Tus lecturas a buen recaudo.</p>
+  </div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
