@@ -9,8 +9,7 @@
     "cover": "https://covers.openlibrary.org/b/id/11481354-M.jpg",
     "status": "leido",
     "rating": 0,
-    "comments": "",
-    "url": "https://openlibrary.org/works/OL82586W"
+    "comments": ""
   },
   {
     "id": "b_msxqu872_dgnzc",
@@ -22,8 +21,7 @@
     "cover": "https://covers.openlibrary.org/b/id/12992491-M.jpg",
     "status": "leido",
     "rating": 5,
-    "comments": "Muy bueo! Totalmente recomedable!",
-    "url": "https://openlibrary.org/works/OL15842880W"
+    "comments": "Muy bueo! Totalmente recomedable!"
   },
   {
     "id": "b_msxqux0f_otc2k",
@@ -35,8 +33,7 @@
     "cover": "https://covers.openlibrary.org/b/id/15162113-M.jpg",
     "status": "leido",
     "rating": 5,
-    "comments": "Genial!",
-    "url": "https://openlibrary.org/works/OL36677934W"
+    "comments": "Genial!"
   },
   {
     "id": "b_msxqvtgg_r2ent",
@@ -48,8 +45,7 @@
     "cover": "https://covers.openlibrary.org/b/id/14428305-M.jpg",
     "status": "leyendo",
     "rating": 0,
-    "comments": "",
-    "url": "https://openlibrary.org/works/OL504353W"
+    "comments": ""
   },
   {
     "id": "b_msxqwi2a_rz62q",
@@ -61,8 +57,7 @@
     "cover": "https://covers.openlibrary.org/b/id/6976407-M.jpg",
     "status": "quiero_leer",
     "rating": 0,
-    "comments": "",
-    "url": "https://openlibrary.org/works/OL82591W"
+    "comments": ""
   },
   {
     "id": "b_msxqzm9r_i2xdj",
@@ -74,8 +69,7 @@
     "cover": "https://covers.openlibrary.org/b/id/13711903-M.jpg",
     "status": "leyendo",
     "rating": 0,
-    "comments": "",
-    "url": "https://openlibrary.org/works/OL31771146W"
+    "comments": ""
   },
   {
     "id": "b_msxr10r5_19zm6",
@@ -87,7 +81,42 @@
     "cover": "https://covers.openlibrary.org/b/id/14625765-M.jpg",
     "status": "quiero_leer",
     "rating": 0,
-    "comments": "",
-    "url": "https://openlibrary.org/works/OL27448W"
+    "comments": ""
+  },
+  {
+    "id": "b_mt0765lr_oyd4o",
+    "title": "Fundamentos del diseño",
+    "year": "1998",
+    "author": "Wucius Womg",
+    "publisher": "Editorial Gustavo Gili",
+    "genre": "",
+    "cover": "https://covers.openlibrary.org/b/id/8525103-M.jpg",
+    "status": "quiero_leer",
+    "rating": 0,
+    "comments": ""
+  },
+  {
+    "id": "b_mt33arw2_v66o9",
+    "title": "Mecanoscrit del segon origen",
+    "year": "1974",
+    "author": "Manuel de Pedrolo",
+    "publisher": "Saltadera",
+    "genre": "Fiction, science fiction, general",
+    "cover": "https://covers.openlibrary.org/b/id/10856767-M.jpg",
+    "status": "quiero_leer",
+    "rating": 0,
+    "comments": ""
+  },
+  {
+    "id": "b_mt4acl2x_0cxrt",
+    "title": "The Lifecycle of Software Objects",
+    "year": "2010",
+    "author": "Ted Chiang",
+    "publisher": "Delos Books",
+    "genre": "Novelle",
+    "cover": "https://covers.openlibrary.org/b/id/8022362-M.jpg",
+    "status": "quiero_leer",
+    "rating": 0,
+    "comments": ""
   }
 ]
