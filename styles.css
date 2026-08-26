@@ -73,13 +73,15 @@ h1,h2{
   border-radius: 2px 6px 6px 2px;
   box-shadow: var(--shadow);
   position: relative;
-  cursor: default;
+  cursor: pointer;
   transform: rotate(var(--tilt, -1deg));
   background-size: cover;
   background-position: center;
   display:flex;
   align-items: flex-end;
   transition: transform .2s ease;
+  text-decoration: none;
+  color: inherit;
 }
 .spine:hover{ transform: rotate(0deg) translateY(-6px); }
 .spine .spine-info{
@@ -224,6 +226,13 @@ main{ max-width: 1100px; margin: 0 auto; padding: 0 24px; }
 .book-meta{ font-size: 0.78rem; color: var(--ink-soft); }
 .book-stars{ color: var(--brass); font-size: 0.95rem; letter-spacing: 1px; margin-top: 2px; }
 .book-stars.empty{ color: #C9BFA6; }
+.book-read-date{
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 2px;
+}
 .book-comments{
   font-size: 0.8rem;
   color: var(--ink-soft);
@@ -506,7 +515,7 @@ main{ max-width: 1100px; margin: 0 auto; padding: 0 24px; }
   margin-bottom: 4px;
 }
 .optional{ text-transform:none; letter-spacing:0; opacity:0.7; }
-.field input[type=text], .field textarea{
+.field input[type=text], .field input[type=month], .field textarea{
   width:100%;
   padding: 9px 10px;
   border: 1px solid var(--paper-deep);
@@ -516,6 +525,23 @@ main{ max-width: 1100px; margin: 0 auto; padding: 0 24px; }
   background: #fff;
 }
 .field input:focus, .field textarea:focus{
+  outline: 2px solid var(--brass-light);
+  outline-offset: 1px;
+}
+
+.date-select-row{ display:flex; gap: 10px; }
+.date-select-row select{
+  flex:1;
+  padding: 9px 10px;
+  border: 1px solid var(--paper-deep);
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+}
+.date-select-row select:focus{
   outline: 2px solid var(--brass-light);
   outline-offset: 1px;
 }

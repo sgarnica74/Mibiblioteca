@@ -27,8 +27,20 @@ document.addEventListener("DOMContentLoaded", init);
 
 async function init() {
   await loadBooks();
+  populateReadYearOptions();
   renderAll();
   bindEvents();
+}
+
+function populateReadYearOptions() {
+  const select = $("#readYearInput");
+  const currentYear = new Date().getFullYear();
+  for (let y = currentYear; y >= 1900; y--) {
+    const opt = document.createElement("option");
+    opt.value = String(y);
+    opt.textContent = String(y);
+    select.appendChild(opt);
+  }
 }
 
 async function loadBooks() {
@@ -240,6 +252,13 @@ function buildCard(book) {
   stars.textContent = filled === 0 ? "☆☆☆☆☆" : "★".repeat(filled) + "☆".repeat(5 - filled);
   infoMain.appendChild(stars);
 
+  if (book.readDate) {
+    const readDate = document.createElement("div");
+    readDate.className = "book-read-date";
+    readDate.textContent = formatReadDate(book.readDate);
+    infoMain.appendChild(readDate);
+  }
+
   if (book.comments) {
     const c = document.createElement("div");
     c.className = "book-comments";
@@ -306,7 +325,7 @@ async function renderShelf() {
   try {
     const results = [];
     for (const author of seeds) {
-      const res = await fetch(`https://openlibrary.org/search.json?author=${encodeURIComponent(author)}&limit=6&fields=title,author_name,cover_i`);
+      const res = await fetch(`https://openlibrary.org/search.json?author=${encodeURIComponent(author)}&limit=6&fields=title,author_name,first_publish_year,publisher,subject,cover_i`);
       if (!res.ok) continue;
       const data = await res.json();
       (data.docs || []).forEach(d => results.push(d));
@@ -331,6 +350,8 @@ async function renderShelf() {
       const spine = document.createElement("div");
       spine.className = "spine";
       spine.style.setProperty("--tilt", (i % 2 === 0 ? "-1.5deg" : "1.5deg"));
+      spine.title = `Pulsa para añadir "${d.title}" a tu biblioteca`;
+
       if (d.cover_i) {
         spine.style.backgroundImage = `url(https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg)`;
       } else {
@@ -340,11 +361,25 @@ async function renderShelf() {
       info.className = "spine-info";
       info.innerHTML = `<span class="spine-title">${escapeHtml(d.title)}</span><span class="spine-sub">${escapeHtml((d.author_name || [])[0] || "")}</span>`;
       spine.appendChild(info);
+
+      spine.addEventListener("click", () => openModal(null, d));
+
       track.appendChild(spine);
     });
   } catch (e) {
     track.innerHTML = `<div class="spine placeholder">No se pudieron cargar<br>recomendaciones ahora mismo</div>`;
   }
+}
+
+function formatReadDate(value) {
+  // value tiene formato "YYYY-MM"
+  const [year, month] = (value || "").split("-");
+  if (!year || !month) return "";
+  const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio",
+                 "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+  const idx = Number(month) - 1;
+  if (idx < 0 || idx > 11) return value;
+  return `Leído en ${meses[idx]} de ${year}`;
 }
 
 function escapeHtml(str) {
@@ -495,7 +530,7 @@ async function testAndConnectGit() {
 }
 
 /* ---------------- MODAL ---------------- */
-function openModal(bookId) {
+function openModal(bookId, seedData = null) {
   editingId = bookId || null;
   const overlay = $("#modalOverlay");
   const book = bookId ? books.find(b => b.id === bookId) : null;
@@ -505,20 +540,52 @@ function openModal(bookId) {
   $("#searchInput").value = "";
   $("#autocompleteList").hidden = true;
 
-  $("#titleInput").value = book?.title || "";
-  $("#yearInput").value = book?.year || "";
-  $("#authorInput").value = book?.author || "";
-  $("#publisherInput").value = book?.publisher || "";
-  $("#genreInput").value = book?.genre || "";
-  $("#commentsInput").value = book?.comments || "";
-  $("#coverUrlInput").value = "";
+  if (book) {
+    $("#titleInput").value = book.title || "";
+    $("#yearInput").value = book.year || "";
+    $("#authorInput").value = book.author || "";
+    $("#publisherInput").value = book.publisher || "";
+    $("#genreInput").value = book.genre || "";
+    const [readYear, readMonth] = (book.readDate || "").split("-");
+    $("#readMonthInput").value = readMonth || "";
+    $("#readYearInput").value = readYear || "";
+    $("#commentsInput").value = book.comments || "";
+    $("#coverUrlInput").value = "";
+    setCoverPreview(book.cover || "");
+    selectedStatus = book.status || "leido";
+    selectedRating = book.rating || 0;
+  } else if (seedData) {
+    $("#titleInput").value = seedData.title || "";
+    $("#yearInput").value = seedData.year || seedData.first_publish_year || "";
+    $("#authorInput").value = seedData.author || (seedData.author_name || [])[0] || "";
+    const pub = Array.isArray(seedData.publisher) ? seedData.publisher[0] : (seedData.publisher || "");
+    $("#publisherInput").value = pub || "";
+    const genre = Array.isArray(seedData.subject) ? seedData.subject[0] : (seedData.genre || seedData.subject || "");
+    $("#genreInput").value = genre || "";
+    $("#readMonthInput").value = "";
+    $("#readYearInput").value = "";
+    $("#commentsInput").value = "";
+    $("#coverUrlInput").value = "";
+    const coverUrl = seedData.cover || (seedData.cover_i ? `https://covers.openlibrary.org/b/id/${seedData.cover_i}-M.jpg` : "");
+    setCoverPreview(coverUrl);
+    selectedStatus = "quiero_leer";
+    selectedRating = 0;
+  } else {
+    $("#titleInput").value = "";
+    $("#yearInput").value = "";
+    $("#authorInput").value = "";
+    $("#publisherInput").value = "";
+    $("#genreInput").value = "";
+    $("#readMonthInput").value = "";
+    $("#readYearInput").value = "";
+    $("#commentsInput").value = "";
+    $("#coverUrlInput").value = "";
+    setCoverPreview("");
+    selectedStatus = currentTab === "wishlist" ? "quiero_leer" : "leido";
+    selectedRating = 0;
+  }
 
-  setCoverPreview(book?.cover || "");
-
-  selectedStatus = book?.status || (currentTab === "wishlist" ? "quiero_leer" : "leido");
   updateStatusUI();
-
-  selectedRating = book?.rating || 0;
   updateStarsUI();
 
   overlay.hidden = false;
@@ -564,6 +631,10 @@ function saveFromModal() {
   }
   const cover = $("#coverUrlInput").value.trim() || $("#coverPreview").dataset.cover || "";
 
+  const readMonth = $("#readMonthInput").value;
+  const readYear = $("#readYearInput").value;
+  const readDate = (readMonth && readYear) ? `${readYear}-${readMonth}` : "";
+
   const data = {
     title,
     year: $("#yearInput").value.trim(),
@@ -573,6 +644,7 @@ function saveFromModal() {
     cover,
     status: selectedStatus,
     rating: selectedStatus === "quiero_leer" ? 0 : selectedRating,
+    readDate: selectedStatus === "quiero_leer" ? "" : readDate,
     comments: selectedStatus === "quiero_leer" ? "" : $("#commentsInput").value.trim(),
   };
 
@@ -613,7 +685,7 @@ async function runSearch(q) {
   list.hidden = false;
   list.innerHTML = `<div class="ac-empty">Buscando...</div>`;
   try {
-    const res = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=6&fields=title,author_name,first_publish_year,publisher,subject,cover_i`);
+    const res = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=6&fields=title,author_name,first_publish_year,publisher,subject,cover_i,key`);
     const data = await res.json();
     const docs = data.docs || [];
     if (docs.length === 0) {

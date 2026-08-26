@@ -86,9 +86,9 @@
         <img id="coverImg" alt="Portada del libro" hidden>
       </div>
       <div class="cover-actions">
-        <label class="pill-btn small" title="Sacar o subir una foto de la portada">
+        <label class="pill-btn small" title="Elige una foto de la galería, tus archivos o haz una nueva con la cámara">
           &#128247; Añadir foto
-          <input type="file" id="coverCamera" accept="image/*" capture="environment" hidden>
+          <input type="file" id="coverCamera" accept="image/*" hidden>
         </label>
         <input type="text" id="coverUrlInput" placeholder="o pega un enlace de imagen">
       </div>
@@ -139,6 +139,30 @@
         <button type="button" class="star" data-val="4">&#9733;</button>
         <button type="button" class="star" data-val="5">&#9733;</button>
         <button type="button" class="star-clear" id="starClear">borrar</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Fecha de lectura <span class="optional">(opcional)</span></label>
+      <div class="date-select-row">
+        <select id="readMonthInput">
+          <option value="">Mes</option>
+          <option value="01">Enero</option>
+          <option value="02">Febrero</option>
+          <option value="03">Marzo</option>
+          <option value="04">Abril</option>
+          <option value="05">Mayo</option>
+          <option value="06">Junio</option>
+          <option value="07">Julio</option>
+          <option value="08">Agosto</option>
+          <option value="09">Septiembre</option>
+          <option value="10">Octubre</option>
+          <option value="11">Noviembre</option>
+          <option value="12">Diciembre</option>
+        </select>
+        <select id="readYearInput">
+          <option value="">Año</option>
+        </select>
       </div>
     </div>
 

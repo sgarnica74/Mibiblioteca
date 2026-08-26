@@ -67,6 +67,10 @@ Al pulsar el botón **+** y escribir un título, la app consulta la base de dato
 
 Si no encuentra el libro, puedes rellenar los campos a mano y usar el botón **📷 Añadir foto** para subir o hacer una foto de la portada desde el móvil.
 
+## Fecha de lectura
+
+En el formulario de añadir/editar libro, justo después de la valoración, puedes indicar el mes y año en que leíste (o terminaste) el libro. Es opcional y se guarda internamente como `readDate` (formato `AAAA-MM`). Cuando está rellena, aparece en la tarjeta del libro como texto (p. ej. "Leído en agosto de 2026"). No aplica a los libros en estado "Quiero leer".
+
 ## Las recomendaciones del estante
 
 El banner superior busca automáticamente otros libros de los mismos autores que tus libros mejor valorados (4-5 estrellas). Si aún no has valorado nada, usa el conjunto completo de tu biblioteca como referencia.
