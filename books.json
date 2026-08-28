@@ -108,5 +108,18 @@
     "status": "leyendo",
     "rating": 0,
     "comments": "Me esta costando porque la historia no me ha enganchado aunque es de lectura fácil"
+  },
+  {
+    "id": "b_mtd66iq1_goggx",
+    "title": "Musclos per sopar",
+    "year": "2021",
+    "author": "Birgit Vanderbeke",
+    "publisher": "Viena",
+    "genre": "",
+    "cover": "https://covers.openlibrary.org/b/id/12777496-M.jpg",
+    "status": "leyendo",
+    "rating": 0,
+    "readDate": "",
+    "comments": ""
   }
 ]
