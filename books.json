@@ -121,5 +121,18 @@
     "rating": 0,
     "readDate": "",
     "comments": ""
+  },
+  {
+    "id": "b_mtd67gbj_iyl6m",
+    "title": "L'amor d'Erika Ewald",
+    "year": "2020",
+    "author": "Stefan Zweig",
+    "publisher": "Viena",
+    "genre": "",
+    "cover": "https://covers.openlibrary.org/b/id/10522943-M.jpg",
+    "status": "quiero_leer",
+    "rating": 0,
+    "readDate": "",
+    "comments": ""
   }
 ]
