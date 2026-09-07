@@ -11,15 +11,16 @@ Web personal para llevar el registro de los libros que has leído, que estás le
 
 ## Cómo funciona el guardado y sincronización
 
-La aplicación cuenta con dos métodos para almacenar tus libros de manera persistente:
+La aplicación gestiona tus libros interactuando directamente con tu repositorio de GitHub:
 
-1. **Almacenamiento Local (localStorage)**: Por defecto, los cambios se guardan localmente en tu navegador. Esto no requiere registro, pero tus datos podrían perderse si borras el historial de navegación, la caché o restauras el dispositivo.
-2. **Sincronización con GitHub (Recomendado)**: Sincroniza tu biblioteca de forma automática y bidireccional con un archivo `.json` alojado en tu propio repositorio de GitHub. De esta manera, aunque borres el historial del navegador, tus libros estarán seguros en la nube y podrás volver a cargarlos en cualquier momento o dispositivo simplemente reconectando tus credenciales.
+1. **Sincronización directa con GitHub**: Al conectar la aplicación a GitHub, todos los libros se leen y escriben directamente en un archivo `.json` de tu repositorio. **No hay almacenamiento intermedio en el navegador (LocalStorage)** para los libros; esto evita confusiones de sincronización o pérdida de datos. ¡GitHub es tu única fuente de verdad!
+2. **Backups automáticos (Ramas de versiones)**: Para mayor seguridad, cada vez que realizas un cambio (añadir, editar, borrar un libro), la aplicación no solo actualiza tu archivo principal, sino que también **crea de forma automática una rama (branch) de respaldo** en tu repositorio con la fecha y hora del cambio (por ejemplo, `backup-2026-09-07T14-30-00`). Así, tienes un historial completo de versiones y puedes recuperar tu biblioteca desde GitHub si cometes algún error.
+3. **Modo local**: Si no tienes configurado GitHub, la aplicación simplemente intentará leer el archivo `books.json` en local.
 
 La app incluye las siguientes herramientas en la barra inferior izquierda:
 
-- **Exportar**: Descarga tu biblioteca completa como `books.json` (copia de seguridad).
-- **Importar**: Carga un archivo `books.json` externo para sustituir los datos locales.
+- **Exportar**: Descarga tu biblioteca actual como `books.json` (copia de seguridad manual).
+- **Importar**: Carga un archivo `books.json` externo para sustituir los datos (y subirlos directamente a GitHub).
 - **GitHub**: Abre el panel de configuración de la sincronización en la nube.
 
 ---
@@ -37,16 +38,16 @@ Para activar la sincronización automática:
 1. Pulsa el botón **☁️ GitHub** abajo a la izquierda.
 2. Introduce tu **Token de Acceso Personal (PAT)**.
 3. Escribe tu **Repositorio** exacto en formato `usuario/repositorio`.
-4. (Opcional) Define la rama (por defecto `main`) y la ruta del archivo (por defecto `books.json`).
+4. (Opcional) Define la rama principal (por defecto `main`) y la ruta del archivo (por defecto `books.json`).
 5. Pulsa **Conectar y Guardar**.
 
 ### 3. Resolución de conflictos inicial
-- **Si el archivo ya existe en GitHub**: La aplicación te preguntará si deseas **Importar** los libros desde GitHub (ideal para recuperar tu biblioteca tras borrar la caché o cambiar de dispositivo) o **Sobrescribir** el archivo de GitHub con tus libros actuales de la web.
-- **Si el archivo no existe**: La aplicación creará un nuevo archivo `books.json` en tu repositorio con los libros actuales.
+- **Si el archivo ya existe en GitHub**: La aplicación te preguntará si deseas **Importar** los libros desde GitHub a tu vista actual o **Sobrescribir** el archivo de GitHub con la biblioteca que tengas abierta en ese momento.
+- **Si el archivo no existe**: La aplicación creará un nuevo archivo `books.json` en tu repositorio.
 
 ### 4. Indicador de estado visual (Punto de color)
-- **Verde**: Conectado y sincronizado con éxito. Cada cambio que realices se guardará en GitHub automáticamente en segundo plano.
-- **Amarillo**: Error temporal de conexión o guardado (la app usará el almacenamiento local de respaldo hasta que se restablezca la conexión).
+- **Verde**: Conectado y sincronizado con éxito.
+- **Amarillo**: Cargando, error temporal de conexión o credenciales incorrectas.
 - **Rojo**: Sincronización desactivada o desconfigurada.
 
 ---

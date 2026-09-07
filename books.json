@@ -1,15 +1,93 @@
 [
   {
-    "id": "b_mtoo9av6_qkkc7",
+    "id": "b_msxhw2mr_78mg4",
+    "title": "Dune",
+    "year": "1965",
+    "author": "Frank Herbert",
+    "publisher": "",
+    "genre": "",
+    "cover": "https://covers.openlibrary.org/b/id/11481354-M.jpg",
+    "status": "leido",
+    "rating": 0,
+    "comments": "",
+    "url": "https://openlibrary.org/works/OL82586W"
+  },
+  {
+    "id": "b_msxqu872_dgnzc",
+    "title": "Pensar en sistemas",
+    "year": "2022",
+    "author": "Donella H. Meadows",
+    "publisher": "Capitán Swing",
+    "genre": "",
+    "cover": "https://covers.openlibrary.org/b/id/12992491-M.jpg",
+    "status": "leido",
+    "rating": 5,
+    "comments": "Muy bueo! Totalmente recomedable!",
+    "url": "https://openlibrary.org/works/OL15842880W"
+  },
+  {
+    "id": "b_msxqux0f_otc2k",
     "title": "Las Hijas de la Criada. Premio Planeta 2023 / the Maid's Daughters",
     "year": "2023",
-    "author": "Sonsoles Ónega",
+    "author": "Sonsoles Onega Salcedo",
     "publisher": "Editorial Planeta, S. A.",
     "genre": "",
-    "cover": "https://covers.openlibrary.org/b/id/15150801-M.jpg",
+    "cover": "https://covers.openlibrary.org/b/id/15162113-M.jpg",
+    "status": "leido",
+    "rating": 5,
+    "comments": "Genial!",
+    "url": "https://openlibrary.org/works/OL36677934W"
+  },
+  {
+    "id": "b_msxqvtgg_r2ent",
+    "title": "Don Quijote de la Mancha",
+    "year": "1600",
+    "author": "Miguel de Cervantes Saavedra",
+    "publisher": "Centro de Estudios Cervantinos",
+    "genre": "Don Quixote (Cervantes Saavedra, Miguel de)",
+    "cover": "https://covers.openlibrary.org/b/id/14428305-M.jpg",
+    "status": "leyendo",
+    "rating": 0,
+    "comments": "",
+    "url": "https://openlibrary.org/works/OL504353W"
+  },
+  {
+    "id": "b_msxqwi2a_rz62q",
+    "title": "Children of Dune",
+    "year": "1976",
+    "author": "Frank Herbert",
+    "publisher": "Orion Publishing Group, Limited",
+    "genre": "Dune (Imaginary place)",
+    "cover": "https://covers.openlibrary.org/b/id/6976407-M.jpg",
     "status": "quiero_leer",
     "rating": 0,
-    "readDate": "",
-    "comments": ""
+    "comments": "",
+    "url": "https://openlibrary.org/works/OL82591W"
+  },
+  {
+    "id": "b_msxqzm9r_i2xdj",
+    "title": "Em dic Goa",
+    "year": "2023",
+    "author": "Míriam Tirado",
+    "publisher": "B de Blok",
+    "genre": "",
+    "cover": "https://covers.openlibrary.org/b/id/13711903-M.jpg",
+    "status": "leyendo",
+    "rating": 0,
+    "comments": "",
+    "url": "https://openlibrary.org/works/OL31771146W"
+  },
+  {
+    "id": "b_msxr10r5_19zm6",
+    "title": "The Lord of the Rings",
+    "year": "1954",
+    "author": "J.R.R. Tolkien",
+    "publisher": "Hyoronsha",
+    "genre": "The Lord of the Rings",
+    "cover": "https://covers.openlibrary.org/b/id/14625765-M.jpg",
+    "status": "quiero_leer",
+    "rating": 0,
+    "comments": "",
+    "url": "https://openlibrary.org/works/OL27448W"
   }
 ]
