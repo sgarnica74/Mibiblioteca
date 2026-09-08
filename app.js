@@ -57,7 +57,9 @@ async function loadBooks() {
   if (gitConfig && gitConfig.token && gitConfig.repo) {
     updateGitStatusUI("yellow");
     try {
-      const url = `https://api.github.com/repos/${gitConfig.repo}/contents/${gitConfig.path || "books.json"}?ref=${gitConfig.branch || "main"}`;
+      const cleanRepo = gitConfig.repo.replace(/\/+$/, '');
+      const cleanPath = (gitConfig.path || "books.json").replace(/^\/+/, '');
+      const url = `https://api.github.com/repos/${cleanRepo}/contents/${cleanPath}?ref=${gitConfig.branch || "main"}`;
       const fetchUrl = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
       const res = await fetch(fetchUrl, {
         headers: {
@@ -111,7 +113,9 @@ async function saveBooks() {
   if (gitConfig && gitConfig.token && gitConfig.repo) {
     updateGitStatusUI("yellow");
     try {
-      const url = `https://api.github.com/repos/${gitConfig.repo}/contents/${gitConfig.path || "books.json"}?ref=${gitConfig.branch || "main"}`;
+      const cleanRepo = gitConfig.repo.replace(/\/+$/, '');
+      const cleanPath = (gitConfig.path || "books.json").replace(/^\/+/, '');
+      const url = `https://api.github.com/repos/${cleanRepo}/contents/${cleanPath}?ref=${gitConfig.branch || "main"}`;
       
       // 1. Obtener el SHA actual para evitar colisiones (con cache busting)
       const getUrl = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
@@ -457,9 +461,15 @@ function disconnectGit() {
 
 async function testAndConnectGit() {
   const token = $("#gitToken").value.trim();
-  const repo = $("#gitRepo").value.trim();
-  const branch = $("#gitBranch").value.trim() || "main";
-  const path = $("#gitPath").value.trim() || "books.json";
+  let repo = $("#gitRepo").value.trim();
+  // Limpiar posibles barras extra que haya puesto el usuario al final del repo
+  repo = repo.replace(/\/+$/, '');
+  
+  let branch = $("#gitBranch").value.trim() || "main";
+  
+  let path = $("#gitPath").value.trim() || "books.json";
+  // Limpiar barra inicial si la puso
+  path = path.replace(/^\/+/, '');
 
   if (!token || !repo) {
     showToast("Introduce el Token y el Repositorio");
