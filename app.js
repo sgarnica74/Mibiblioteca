@@ -543,16 +543,16 @@ async function testAndConnectGit() {
         closeGitModal();
         showToast("¡Conectado! Archivo creado en GitHub");
       } else {
-        throw new Error("No se pudo crear el archivo en GitHub");
+        throw new Error(`Fallo al crear archivo: Error ${createRes.status}`);
       }
     } else {
-      throw new Error("Credenciales inválidas o sin permisos");
+      throw new Error(`Credenciales/Permisos: Error ${res.status}`);
     }
   } catch (err) {
-    console.error(err);
+    console.error("Error en testAndConnectGit:", err);
     connectBtn.textContent = originalText;
     connectBtn.disabled = false;
-    showToast("Error de conexión. Verifica tu Token y Repositorio.");
+    showToast(`Error: ${err.message}. Revisa la consola (F12)`);
   }
 }
 
