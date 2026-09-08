@@ -63,8 +63,7 @@ async function loadBooks() {
       const fetchUrl = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
       const res = await fetch(fetchUrl, {
         headers: {
-          "Authorization": `token ${gitConfig.token}`,
-          "Cache-Control": "no-cache, no-store, must-revalidate"
+          "Authorization": `token ${gitConfig.token}`
         }
       });
       if (res.ok) {
@@ -121,8 +120,7 @@ async function saveBooks() {
       const getUrl = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
       const getRes = await fetch(getUrl, {
         headers: { 
-          "Authorization": `token ${gitConfig.token}`,
-          "Cache-Control": "no-cache, no-store, must-revalidate"
+          "Authorization": `token ${gitConfig.token}`
         }
       });
       
@@ -486,8 +484,7 @@ async function testAndConnectGit() {
     const getUrl = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
     const res = await fetch(getUrl, {
       headers: { 
-        "Authorization": `token ${token}`,
-        "Cache-Control": "no-cache, no-store, must-revalidate"
+        "Authorization": `token ${token}`
       }
     });
 
