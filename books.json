@@ -50,5 +50,18 @@
     "rating": 0,
     "readDate": "2026-08",
     "comments": "Biblioteca ametlla; flojito"
+  },
+  {
+    "id": "b_mty4s0y9_grkax",
+    "title": "Musclos per sopar",
+    "year": "2021",
+    "author": "",
+    "publisher": "Viena",
+    "genre": "",
+    "cover": "https://covers.openlibrary.org/b/id/12777496-M.jpg",
+    "status": "leido",
+    "rating": 0,
+    "readDate": "2026-08",
+    "comments": "Biblioteca ametlla. Normal"
   }
 ]
