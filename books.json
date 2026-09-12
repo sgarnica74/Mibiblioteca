@@ -37,5 +37,18 @@
     "rating": 0,
     "readDate": "",
     "comments": "Recomendado x Marta"
+  },
+  {
+    "id": "b_mty4qu2a_kdkg8",
+    "title": "Hijas de la luz del norte",
+    "year": "2014",
+    "author": "Christine Kabus",
+    "publisher": "B de Bolsillo",
+    "genre": "",
+    "cover": "https://covers.openlibrary.org/b/id/12337752-M.jpg",
+    "status": "leido",
+    "rating": 0,
+    "readDate": "2026-08",
+    "comments": "Biblioteca ametlla; flojito"
   }
 ]
