@@ -76,5 +76,18 @@
     "rating": 1,
     "readDate": "2026-06",
     "comments": "Club ovejas negras, me ha encantado"
+  },
+  {
+    "id": "b_mu158sfz_7dcet",
+    "title": "L'amor d'Erika Ewald",
+    "year": "2020",
+    "author": "",
+    "publisher": "Viena",
+    "genre": "",
+    "cover": "https://covers.openlibrary.org/b/id/10522943-M.jpg",
+    "status": "leido",
+    "rating": 0,
+    "readDate": "2026-09",
+    "comments": "Biblioteca Ametlla: NO ACABADO"
   }
 ]
