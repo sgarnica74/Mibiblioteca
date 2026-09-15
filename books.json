@@ -193,5 +193,18 @@
     "rating": 3,
     "readDate": "2026-02",
     "comments": "Biblio: me ha gustado bastante…historia entrelazada de dos familias despues de la guerra civil"
+  },
+  {
+    "id": "b_mu33j9d2_qzqxz",
+    "title": "Metamorphosis",
+    "year": "1915",
+    "author": "Franz Kafka",
+    "publisher": "Cherry Hill Publishing, LLC",
+    "genre": "Fantasy fiction",
+    "cover": "https://covers.openlibrary.org/b/id/12820198-M.jpg",
+    "status": "leido",
+    "rating": 0,
+    "readDate": "2026-07",
+    "comments": "Club de classics: bufff, una paraoina q encara no entenc com es un classic…potser no l’he entes…"
   }
 ]
