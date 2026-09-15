@@ -154,5 +154,18 @@
     "rating": 5,
     "readDate": "2025-10",
     "comments": "Club de classics: diria q dels millors llibres de la historia"
+  },
+  {
+    "id": "b_mu33ctph_faez0",
+    "title": "La red de Alice / The Alice Network",
+    "year": "2020",
+    "author": "Kate Quinn",
+    "publisher": "SUMA",
+    "genre": "Fiction, women",
+    "cover": "https://covers.openlibrary.org/b/id/9914870-M.jpg",
+    "status": "leido",
+    "rating": 0,
+    "readDate": "2025-06",
+    "comments": "Biblio: m’ha agradat bastant…espies despres de la guerra. Recomanable"
   }
 ]
