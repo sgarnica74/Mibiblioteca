@@ -219,5 +219,18 @@
     "rating": 0,
     "readDate": "2026-01",
     "comments": "Club de clAssics: no m’ha agradat, potser no ho he entes"
+  },
+  {
+    "id": "b_mu33n0vu_bztiz",
+    "title": "Hamnet",
+    "year": "2020",
+    "author": "Maggie O'Farrell",
+    "publisher": "Tinder Presss",
+    "genre": "English literature",
+    "cover": "https://covers.openlibrary.org/b/id/10306590-M.jpg",
+    "status": "leido",
+    "rating": 3,
+    "readDate": "2025-05",
+    "comments": "Club papyrus: molt bonic i la pelicula tb (espiritualitat…)"
   }
 ]
