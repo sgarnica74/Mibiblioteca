@@ -349,5 +349,18 @@
     "rating": 0,
     "readDate": "2026-03",
     "comments": "Club Papyrus: bonic, mig historia real vida escriptor. Tancament del club amb soñar amb autor, interessant"
+  },
+  {
+    "id": "b_mu344bqa_x580u",
+    "title": "El camino",
+    "year": "1950",
+    "author": "Miguel Delibes",
+    "publisher": "彩流社 (SairyuSha)",
+    "genre": "Spain",
+    "cover": "https://covers.openlibrary.org/b/id/4903613-M.jpg",
+    "status": "leyendo",
+    "rating": 0,
+    "readDate": "2026-08",
+    "comments": "Club classics: Aburrit, no se si ho acsbare"
   }
 ]
