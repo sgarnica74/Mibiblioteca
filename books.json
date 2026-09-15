@@ -258,5 +258,18 @@
     "rating": 0,
     "readDate": "2025-02",
     "comments": "Club classics: normal"
+  },
+  {
+    "id": "b_mu33rsuj_zbb3e",
+    "title": "Noches blancas",
+    "year": "2015",
+    "author": "Fior Dostojevski",
+    "publisher": "MESTAS Ediciones, S.L.",
+    "genre": "",
+    "cover": "https://covers.openlibrary.org/b/id/10861094-M.jpg",
+    "status": "leido",
+    "rating": 0,
+    "readDate": "2025-05",
+    "comments": "Club de classics: …un classic"
   }
 ]
