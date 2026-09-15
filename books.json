@@ -180,5 +180,18 @@
     "rating": 3,
     "readDate": "2026-02",
     "comments": "Biblio: molt bonic: dones, tradicions, medicina…"
+  },
+  {
+    "id": "b_mu33hdj9_4njtk",
+    "title": "La casa de huéspedes",
+    "year": "2025",
+    "author": "Ana Lena Rivera",
+    "publisher": "Grijalbo",
+    "genre": "Ficción histórica",
+    "cover": "https://covers.openlibrary.org/b/id/15214235-M.jpg",
+    "status": "leido",
+    "rating": 3,
+    "readDate": "2026-02",
+    "comments": "Biblio: me ha gustado bastante…historia entrelazada de dos familias despues de la guerra civil"
   }
 ]
