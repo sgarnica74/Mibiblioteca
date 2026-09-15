@@ -128,5 +128,18 @@
     "rating": 0,
     "readDate": "",
     "comments": ""
+  },
+  {
+    "id": "b_mu339gbn_59utk",
+    "title": "La elegancia del erizo",
+    "year": "2010",
+    "author": "Muriel Barbery",
+    "publisher": "Seix Barral",
+    "genre": "Fiction, general",
+    "cover": "https://covers.openlibrary.org/b/id/6280314-M.jpg",
+    "status": "leido",
+    "rating": 5,
+    "readDate": "2026-04",
+    "comments": "Increible, es como leer, en cada parrafo, dos libros a la vez…metaforas…muy buen libro"
   }
 ]
