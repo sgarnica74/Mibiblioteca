@@ -141,5 +141,18 @@
     "rating": 5,
     "readDate": "2026-04",
     "comments": "Increible, es como leer, en cada parrafo, dos libros a la vez…metaforas…muy buen libro"
+  },
+  {
+    "id": "b_mu33b4cv_rrdpk",
+    "title": "Cien años de soledad",
+    "year": "1967",
+    "author": "Gabriel García Márquez",
+    "publisher": "Selecciones austral",
+    "genre": "Spanish language books",
+    "cover": "https://covers.openlibrary.org/b/id/12627383-M.jpg",
+    "status": "leido",
+    "rating": 5,
+    "readDate": "2025-10",
+    "comments": "Club de classics: diria q dels millors llibres de la historia"
   }
 ]
