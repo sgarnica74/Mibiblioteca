@@ -115,5 +115,18 @@
     "rating": 0,
     "readDate": "2026-08",
     "comments": "Biblio ametlla: ultim llibre de G.G.Marquez: fluixet"
+  },
+  {
+    "id": "b_mu336ov8_oow4r",
+    "title": "El enigma de la habitación 622",
+    "year": "2022",
+    "author": "Joël Dicker",
+    "publisher": "DEBOLSILLO",
+    "genre": "",
+    "cover": "https://covers.openlibrary.org/b/id/13556115-M.jpg",
+    "status": "quiero_leer",
+    "rating": 0,
+    "readDate": "",
+    "comments": ""
   }
 ]
