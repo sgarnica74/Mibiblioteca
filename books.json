@@ -362,5 +362,18 @@
     "rating": 0,
     "readDate": "2026-08",
     "comments": "Club classics: Aburrit, no se si ho acsbare"
+  },
+  {
+    "id": "b_mu9p1nj1_rq4pn",
+    "title": "El día que se perdió la cordura",
+    "year": "2014",
+    "author": "Javier Castillo",
+    "publisher": "Debolsillo",
+    "genre": "Fiction, psychological",
+    "cover": "https://covers.openlibrary.org/b/id/8212251-M.jpg",
+    "status": "quiero_leer",
+    "rating": 0,
+    "readDate": "",
+    "comments": ""
   }
 ]
