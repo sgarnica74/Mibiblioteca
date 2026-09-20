@@ -375,5 +375,18 @@
     "rating": 0,
     "readDate": "",
     "comments": ""
+  },
+  {
+    "id": "b_mu9p2gmg_e9kez",
+    "title": "La casa entre los cactus",
+    "year": "2021",
+    "author": "",
+    "publisher": "Penguin Random House",
+    "genre": "",
+    "cover": "https://covers.openlibrary.org/b/id/12565782-M.jpg",
+    "status": "quiero_leer",
+    "rating": 0,
+    "readDate": "",
+    "comments": ""
   }
 ]
