@@ -427,5 +427,18 @@
     "rating": 0,
     "readDate": "",
     "comments": ""
+  },
+  {
+    "id": "b_mup6w315_apop7",
+    "title": "La paciente silenciosa",
+    "year": "2018",
+    "author": "Alex Michaelides",
+    "publisher": "Droemer eBook",
+    "genre": "Fiction, psychological",
+    "cover": "https://covers.openlibrary.org/b/id/9407338-M.jpg",
+    "status": "quiero_leer",
+    "rating": 0,
+    "readDate": "",
+    "comments": ""
   }
 ]
