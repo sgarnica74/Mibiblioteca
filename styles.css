@@ -741,3 +741,55 @@ main{ max-width: 1100px; margin: 0 auto; padding: 0 24px; }
 @media (prefers-reduced-motion: reduce){
   *{ transition:none !important; scroll-behavior:auto !important; }
 }
+
+/* =========================================================
+   STATS PANEL
+   ========================================================= */
+.stats-panel {
+  max-width: 1000px;
+  margin: 60px auto 40px auto;
+  padding: 0 20px;
+  text-align: center;
+}
+.stats-panel h2 {
+  font-size: 1.6rem;
+  color: var(--wood-dark);
+  margin-bottom: 24px;
+  font-family: serif;
+}
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+.stat-card {
+  background-color: var(--paper);
+  border: 1px solid rgba(0,0,0,0.05);
+  border-radius: 12px;
+  padding: 24px 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  transition: transform 0.2s ease;
+}
+.stat-card:hover {
+  transform: translateY(-4px);
+}
+.stat-icon {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: 12px;
+}
+.stat-value {
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: var(--accent);
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stat-label {
+  font-size: 0.85rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}

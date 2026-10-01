@@ -54,6 +54,13 @@ async function loadBooks() {
     }
   }
 
+  // Rescatar libros locales por si se usó la app sin conexión o sin GitHub
+  const saved = localStorage.getItem(STORAGE_KEY);
+  let localBooks = [];
+  if (saved) {
+    try { localBooks = JSON.parse(saved); } catch (e) {}
+  }
+
   if (gitConfig && gitConfig.token && gitConfig.repo) {
     updateGitStatusUI("yellow");
     try {
@@ -70,10 +77,22 @@ async function loadBooks() {
         const data = await res.json();
         gitFileSha = data.sha;
         const content = fromBase64Utf8(data.content);
-        books = JSON.parse(content);
+        const githubBooks = JSON.parse(content);
         
-        // ELIMINADO EL LOCALSTORAGE (para no generar confusión)
-        localStorage.removeItem(STORAGE_KEY);
+        // Fusión: añadir libros locales creados offline que no existan en GitHub
+        const githubIds = new Set(githubBooks.map(b => b.id));
+        const newLocals = localBooks.filter(b => !githubIds.has(b.id));
+        
+        if (newLocals.length > 0) {
+          books = [...githubBooks, ...newLocals];
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
+          updateGitStatusUI("green");
+          saveBooks(); // Forzamos subida de los nuevos a GitHub
+          return;
+        }
+
+        books = githubBooks;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
         updateGitStatusUI("green");
         return;
       } else {
@@ -81,22 +100,27 @@ async function loadBooks() {
       }
     } catch (e) {
       console.error("Error al cargar desde GitHub:", e);
-      showToast("Error de sincronización con GitHub.");
+      showToast("Sin conexión. Usando datos locales.");
       updateGitStatusUI("yellow");
+      if (localBooks.length > 0) books = localBooks;
+      return;
     }
   } else {
     updateGitStatusUI("red");
   }
 
-  // Si no hay configuración de GitHub, eliminamos cualquier localStorage antiguo
-  localStorage.removeItem(STORAGE_KEY);
+  // Si no hay configuración de GitHub, usamos lo que haya en local
+  if (localBooks.length > 0) {
+    books = localBooks;
+    return;
+  }
 
-  // primera vez: intenta cargar books.json de al lado del index.html
+  // primera vez total: intenta cargar books.json inicial
   try {
     const res = await fetch(DATA_FILE, { cache: "no-store" });
     if (res.ok) {
       books = await res.json();
-      // Ya no guardamos en localstorage
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
     } else {
       books = [];
     }
@@ -106,8 +130,8 @@ async function loadBooks() {
 }
 
 async function saveBooks() {
-  // ELIMINADO EL LOCALSTORAGE (para no generar confusión)
-  localStorage.removeItem(STORAGE_KEY);
+  // Guardamos SIEMPRE en localstorage para funcionar correctamente sin conexión
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
 
   if (gitConfig && gitConfig.token && gitConfig.repo) {
     updateGitStatusUI("yellow");
@@ -192,7 +216,52 @@ function uid() {
 function renderAll() {
   renderGrid("leido_leyendo", "gridReading", "emptyReading");
   renderGrid("quiero_leer", "gridWishlist", "emptyWishlist");
+  renderGrid("abandonado", "gridAbandoned", "emptyAbandoned");
   renderShelf();
+  renderStats();
+}
+
+function renderStats() {
+  const readBooks = books.filter(b => b.status === "leido");
+  
+  // 1. Total libros leídos
+  $("#statTotalBooks").textContent = readBooks.length;
+  
+  // 2. Leídos este año
+  const currentYear = new Date().getFullYear().toString();
+  const yearBooks = readBooks.filter(b => b.readDate && b.readDate.startsWith(currentYear));
+  $("#statYearBooks").textContent = yearBooks.length;
+  
+  // Función auxiliar para sacar el más frecuente
+  const getMostFrequent = (arr) => {
+    if (arr.length === 0) return "—";
+    const counts = {};
+    let maxCount = 0;
+    let maxItem = "—";
+    for (const item of arr) {
+      if (!item) continue;
+      counts[item] = (counts[item] || 0) + 1;
+      if (counts[item] > maxCount) {
+        maxCount = counts[item];
+        maxItem = item;
+      }
+    }
+    return maxItem;
+  };
+
+  // 3. Autor más leído
+  const authors = readBooks.map(b => b.author).filter(Boolean);
+  let topAuthor = getMostFrequent(authors);
+  if (topAuthor.length > 20) topAuthor = topAuthor.substring(0, 18) + "...";
+  $("#statTopAuthor").textContent = topAuthor;
+  $("#statTopAuthor").title = topAuthor; 
+
+  // 4. Género favorito
+  const genres = readBooks.map(b => b.genre).filter(Boolean);
+  let topGenre = getMostFrequent(genres);
+  if (topGenre.length > 20) topGenre = topGenre.substring(0, 18) + "...";
+  $("#statTopGenre").textContent = topGenre;
+  $("#statTopGenre").title = topGenre;
 }
 
 function renderGrid(group, gridId, emptyId) {
@@ -204,8 +273,10 @@ function renderGrid(group, gridId, emptyId) {
     if (currentFilter !== "all") {
       list = list.filter(b => b.status === currentFilter);
     }
-  } else {
+  } else if (group === "quiero_leer") {
     list = books.filter(b => b.status === "quiero_leer");
+  } else if (group === "abandonado") {
+    list = books.filter(b => b.status === "abandonado");
   }
 
   grid.innerHTML = "";
@@ -249,7 +320,11 @@ function buildCard(book) {
   }
   const flag = document.createElement("span");
   flag.className = "status-flag " + book.status;
-  flag.textContent = book.status === "leido" ? "Leído" : book.status === "leyendo" ? "Leyendo" : "Pendiente";
+  if (book.status === "leido") flag.textContent = "Leído";
+  else if (book.status === "leyendo") flag.textContent = "Leyendo";
+  else if (book.status === "abandonado") flag.textContent = "Abandonado";
+  else flag.textContent = "Pendiente";
+  
   cover.appendChild(flag);
   card.appendChild(cover);
 
@@ -282,6 +357,13 @@ function buildCard(book) {
     infoMain.appendChild(readDate);
   }
 
+  if (book.recommendation) {
+    const r = document.createElement("div");
+    r.className = "book-comments";
+    r.innerHTML = `<strong>Recomendado a:</strong> ${escapeHtml(book.recommendation)}`;
+    infoMain.appendChild(r);
+  }
+
   if (book.comments) {
     const c = document.createElement("div");
     c.className = "book-comments";
@@ -294,7 +376,7 @@ function buildCard(book) {
   const footer = document.createElement("div");
   footer.className = "book-footer";
 
-  if (book.status !== "quiero_leer") {
+  if (book.status === "leido" || book.status === "leyendo") {
     const label = document.createElement("label");
     label.className = "finished-toggle";
     const cb = document.createElement("input");
@@ -510,6 +592,7 @@ async function testAndConnectGit() {
       gitFileSha = sha;
       gitConfig = { token, repo, branch, path };
       localStorage.setItem(GIT_CONFIG_KEY, JSON.stringify(gitConfig));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
       
       renderAll();
       updateGitStatusUI("green");
@@ -584,6 +667,7 @@ function openModal(bookId, seedData = null) {
     $("#readMonthInput").value = readMonth || "";
     $("#readYearInput").value = readYear || "";
     $("#commentsInput").value = book.comments || "";
+    $("#recommendationInput").value = book.recommendation || "";
     $("#coverUrlInput").value = "";
     setCoverPreview(book.cover || "");
     selectedStatus = book.status || "leido";
@@ -599,6 +683,7 @@ function openModal(bookId, seedData = null) {
     $("#readMonthInput").value = "";
     $("#readYearInput").value = "";
     $("#commentsInput").value = "";
+    $("#recommendationInput").value = "";
     $("#coverUrlInput").value = "";
     const coverUrl = seedData.cover || (seedData.cover_i ? `https://covers.openlibrary.org/b/id/${seedData.cover_i}-M.jpg` : "");
     setCoverPreview(coverUrl);
@@ -613,9 +698,12 @@ function openModal(bookId, seedData = null) {
     $("#readMonthInput").value = "";
     $("#readYearInput").value = "";
     $("#commentsInput").value = "";
+    $("#recommendationInput").value = "";
     $("#coverUrlInput").value = "";
     setCoverPreview("");
-    selectedStatus = currentTab === "wishlist" ? "quiero_leer" : "leido";
+    if (currentTab === "wishlist") selectedStatus = "quiero_leer";
+    else if (currentTab === "abandoned") selectedStatus = "abandonado";
+    else selectedStatus = "leido";
     selectedRating = 0;
   }
 
@@ -680,6 +768,7 @@ function saveFromModal() {
     rating: selectedStatus === "quiero_leer" ? 0 : selectedRating,
     readDate: selectedStatus === "quiero_leer" ? "" : readDate,
     comments: selectedStatus === "quiero_leer" ? "" : $("#commentsInput").value.trim(),
+    recommendation: selectedStatus === "quiero_leer" ? "" : $("#recommendationInput").value.trim(),
   };
 
   if (editingId) {
@@ -719,23 +808,86 @@ async function runSearch(q) {
   list.hidden = false;
   list.innerHTML = `<div class="ac-empty">Buscando...</div>`;
   try {
-    const res = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=6&fields=title,author_name,first_publish_year,publisher,subject,cover_i,key`);
-    const data = await res.json();
-    const docs = data.docs || [];
-    if (docs.length === 0) {
+    let combinedResults = [];
+    
+    // 1. Buscar en Google Books (suele tener mejores portadas y datos en español)
+    try {
+      const gbRes = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=5`);
+      if (gbRes.ok) {
+        const gbData = await gbRes.json();
+        if (gbData.items) {
+          gbData.items.forEach(item => {
+            const vol = item.volumeInfo;
+            if (!vol) return;
+            // Asegurarnos de usar https para las imágenes de Google
+            let coverUrl = vol.imageLinks?.thumbnail || vol.imageLinks?.smallThumbnail || "";
+            if (coverUrl) coverUrl = coverUrl.replace(/^http:/, "https:");
+            
+            combinedResults.push({
+              source: "google",
+              title: vol.title,
+              author: (vol.authors || [])[0] || "",
+              year: (vol.publishedDate || "").substring(0, 4),
+              publisher: vol.publisher || "",
+              genre: (vol.categories || [])[0] || "",
+              coverThumb: coverUrl, 
+              coverFull: coverUrl,
+              id: item.id
+            });
+          });
+        }
+      }
+    } catch (e) { console.error("Error Google Books:", e); }
+
+    // 2. Buscar en OpenLibrary como respaldo o para rellenar
+    if (combinedResults.length < 6) {
+      try {
+        const olRes = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=5&fields=title,author_name,first_publish_year,publisher,subject,cover_i,key`);
+        if (olRes.ok) {
+          const olData = await olRes.json();
+          (olData.docs || []).forEach(d => {
+            combinedResults.push({
+              source: "openlibrary",
+              title: d.title,
+              author: (d.author_name || [])[0] || "",
+              year: d.first_publish_year || "",
+              publisher: (d.publisher || [])[0] || "",
+              genre: (d.subject || [])[0] || "",
+              coverThumb: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-S.jpg` : "",
+              coverFull: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg` : "",
+              id: d.key
+            });
+          });
+        }
+      } catch (e) { console.error("Error OpenLibrary:", e); }
+    }
+
+    // Filtrar duplicados por título aproximado
+    const uniqueResults = [];
+    const seenTitles = new Set();
+    for (const res of combinedResults) {
+      const t = (res.title || "").toLowerCase().trim();
+      if (!seenTitles.has(t) && t !== "") {
+        seenTitles.add(t);
+        uniqueResults.push(res);
+      }
+      if (uniqueResults.length >= 8) break; // Máximo 8 resultados
+    }
+
+    if (uniqueResults.length === 0) {
       list.innerHTML = `<div class="ac-empty">Sin resultados. Puedes rellenar los campos a mano y añadir una foto.</div>`;
       return;
     }
+    
     list.innerHTML = "";
-    docs.forEach(d => {
+    uniqueResults.forEach(d => {
       const item = document.createElement("div");
       item.className = "ac-item";
-      const coverUrl = d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-S.jpg` : "";
       item.innerHTML = `
-        ${coverUrl ? `<img src="${coverUrl}" alt="">` : `<div style="width:32px;height:46px;background:var(--paper-deep);flex-shrink:0;"></div>`}
+        ${d.coverThumb ? `<img src="${d.coverThumb}" alt="">` : `<div style="width:32px;height:46px;background:var(--paper-deep);flex-shrink:0;"></div>`}
         <div class="ac-text">
           <div>${escapeHtml(d.title)}</div>
-          <div class="ac-author">${escapeHtml((d.author_name || [])[0] || "Autor desconocido")} · ${d.first_publish_year || "—"}</div>
+          <div class="ac-author">${escapeHtml(d.author)} · ${d.year || "—"}</div>
         </div>`;
       item.addEventListener("click", () => selectSearchResult(d));
       list.appendChild(item);
@@ -747,12 +899,14 @@ async function runSearch(q) {
 
 function selectSearchResult(d) {
   $("#titleInput").value = d.title || "";
-  $("#authorInput").value = (d.author_name || [])[0] || "";
-  $("#yearInput").value = d.first_publish_year || "";
-  $("#publisherInput").value = (d.publisher || [])[0] || "";
-  $("#genreInput").value = (d.subject || [])[0] || "";
-  if (d.cover_i) {
-    setCoverPreview(`https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg`);
+  $("#authorInput").value = d.author || "";
+  $("#yearInput").value = d.year || "";
+  $("#publisherInput").value = d.publisher || "";
+  $("#genreInput").value = d.genre || "";
+  if (d.coverFull) {
+    setCoverPreview(d.coverFull);
+  } else {
+    setCoverPreview("");
   }
   $("#autocompleteList").hidden = true;
   $("#searchInput").value = "";
