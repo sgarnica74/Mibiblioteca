@@ -54,44 +54,23 @@ async function loadBooks() {
     }
   }
 
-  // Rescatar libros locales por si se usó la app sin conexión o sin GitHub
-  const saved = localStorage.getItem(STORAGE_KEY);
-  let localBooks = [];
-  if (saved) {
-    try { localBooks = JSON.parse(saved); } catch (e) {}
-  }
-
   if (gitConfig && gitConfig.token && gitConfig.repo) {
     updateGitStatusUI("yellow");
     try {
-      const cleanRepo = gitConfig.repo.replace(/\/+$/, '');
-      const cleanPath = (gitConfig.path || "books.json").replace(/^\/+/, '');
-      const url = `https://api.github.com/repos/${cleanRepo}/contents/${cleanPath}?ref=${gitConfig.branch || "main"}`;
-      const fetchUrl = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
-      const res = await fetch(fetchUrl, {
+      const url = `https://api.github.com/repos/${gitConfig.repo}/contents/${gitConfig.path || "books.json"}?ref=${gitConfig.branch || "main"}`;
+      const res = await fetch(url, {
         headers: {
-          "Authorization": `token ${gitConfig.token}`
+          "Authorization": `token ${gitConfig.token}`,
+          "Cache-Control": "no-cache"
         }
       });
       if (res.ok) {
         const data = await res.json();
         gitFileSha = data.sha;
         const content = fromBase64Utf8(data.content);
-        const githubBooks = JSON.parse(content);
+        books = JSON.parse(content);
         
-        // Fusión: añadir libros locales creados offline que no existan en GitHub
-        const githubIds = new Set(githubBooks.map(b => b.id));
-        const newLocals = localBooks.filter(b => !githubIds.has(b.id));
-        
-        if (newLocals.length > 0) {
-          books = [...githubBooks, ...newLocals];
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
-          updateGitStatusUI("green");
-          saveBooks(); // Forzamos subida de los nuevos a GitHub
-          return;
-        }
-
-        books = githubBooks;
+        // Guardar respaldo local
         localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
         updateGitStatusUI("green");
         return;
@@ -99,53 +78,59 @@ async function loadBooks() {
         throw new Error("Respuesta no OK de GitHub");
       }
     } catch (e) {
-      console.error("Error al cargar desde GitHub:", e);
-      showToast("Sin conexión. Usando datos locales.");
+      console.error("Error al cargar desde GitHub, usando respaldo local:", e);
+      showToast("Error de sincronización con GitHub. Usando datos locales.");
       updateGitStatusUI("yellow");
-      if (localBooks.length > 0) books = localBooks;
-      return;
+      // fallthrough a cargar del localStorage local
     }
   } else {
     updateGitStatusUI("red");
   }
 
-  // Si no hay configuración de GitHub, usamos lo que haya en local
-  if (localBooks.length > 0) {
-    books = localBooks;
-    return;
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        books = parsed;
+        return;
+      }
+      // si lo guardado está vacío, no lo damos por bueno: seguimos abajo
+      // para intentar recuperar los libros reales desde books.json
+    } catch (e) { /* fall through */ }
   }
-
-  // primera vez total: intenta cargar books.json inicial
+  // primera vez (o localStorage vacío): intenta cargar books.json de al lado del index.html
   try {
     const res = await fetch(DATA_FILE, { cache: "no-store" });
     if (res.ok) {
-      books = await res.json();
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        books = data;
+        saveBooks();
+      } else {
+        books = [];
+      }
     } else {
       books = [];
     }
   } catch (e) {
+    console.error("No se pudo cargar books.json:", e);
     books = [];
   }
 }
 
 async function saveBooks() {
-  // Guardamos SIEMPRE en localstorage para funcionar correctamente sin conexión
+  // Guardar respaldo local
   localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
 
   if (gitConfig && gitConfig.token && gitConfig.repo) {
     updateGitStatusUI("yellow");
     try {
-      const cleanRepo = gitConfig.repo.replace(/\/+$/, '');
-      const cleanPath = (gitConfig.path || "books.json").replace(/^\/+/, '');
-      const url = `https://api.github.com/repos/${cleanRepo}/contents/${cleanPath}?ref=${gitConfig.branch || "main"}`;
+      const url = `https://api.github.com/repos/${gitConfig.repo}/contents/${gitConfig.path || "books.json"}?ref=${gitConfig.branch || "main"}`;
       
-      // 1. Obtener el SHA actual para evitar colisiones (con cache busting)
-      const getUrl = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
-      const getRes = await fetch(getUrl, {
-        headers: { 
-          "Authorization": `token ${gitConfig.token}`
-        }
+      // 1. Obtener el SHA actual para evitar colisiones
+      const getRes = await fetch(url, {
+        headers: { "Authorization": `token ${gitConfig.token}` }
       });
       
       let sha = null;
@@ -155,9 +140,8 @@ async function saveBooks() {
       }
 
       // 2. Realizar el PUT
-      const timestampForBranch = new Date().toISOString().replace(/[:.]/g, '-');
       const payload = {
-        message: `Actualizar biblioteca desde Mi Biblioteca - ${timestampForBranch}`,
+        message: "Actualizar biblioteca desde Mi Biblioteca",
         content: toBase64Utf8(JSON.stringify(books, null, 2))
       };
       if (sha) {
@@ -177,26 +161,6 @@ async function saveBooks() {
         const putData = await putRes.json();
         gitFileSha = putData.content.sha;
         updateGitStatusUI("green");
-
-        // 3. Crear una nueva rama en GitHub con esta subida (Guardar versiones/ramas)
-        const newCommitSha = putData.commit.sha;
-        const branchName = `backup-${timestampForBranch}`;
-        const refUrl = `https://api.github.com/repos/${gitConfig.repo}/git/refs`;
-        try {
-          await fetch(refUrl, {
-            method: "POST",
-            headers: {
-              "Authorization": `token ${gitConfig.token}`,
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              ref: `refs/heads/${branchName}`,
-              sha: newCommitSha
-            })
-          });
-        } catch (branchErr) {
-          console.error("No se pudo crear la rama de respaldo", branchErr);
-        }
       } else {
         throw new Error("No se pudo guardar en GitHub");
       }
@@ -216,52 +180,7 @@ function uid() {
 function renderAll() {
   renderGrid("leido_leyendo", "gridReading", "emptyReading");
   renderGrid("quiero_leer", "gridWishlist", "emptyWishlist");
-  renderGrid("abandonado", "gridAbandoned", "emptyAbandoned");
   renderShelf();
-  renderStats();
-}
-
-function renderStats() {
-  const readBooks = books.filter(b => b.status === "leido");
-  
-  // 1. Total libros leídos
-  $("#statTotalBooks").textContent = readBooks.length;
-  
-  // 2. Leídos este año
-  const currentYear = new Date().getFullYear().toString();
-  const yearBooks = readBooks.filter(b => b.readDate && b.readDate.startsWith(currentYear));
-  $("#statYearBooks").textContent = yearBooks.length;
-  
-  // Función auxiliar para sacar el más frecuente
-  const getMostFrequent = (arr) => {
-    if (arr.length === 0) return "—";
-    const counts = {};
-    let maxCount = 0;
-    let maxItem = "—";
-    for (const item of arr) {
-      if (!item) continue;
-      counts[item] = (counts[item] || 0) + 1;
-      if (counts[item] > maxCount) {
-        maxCount = counts[item];
-        maxItem = item;
-      }
-    }
-    return maxItem;
-  };
-
-  // 3. Autor más leído
-  const authors = readBooks.map(b => b.author).filter(Boolean);
-  let topAuthor = getMostFrequent(authors);
-  if (topAuthor.length > 20) topAuthor = topAuthor.substring(0, 18) + "...";
-  $("#statTopAuthor").textContent = topAuthor;
-  $("#statTopAuthor").title = topAuthor; 
-
-  // 4. Género favorito
-  const genres = readBooks.map(b => b.genre).filter(Boolean);
-  let topGenre = getMostFrequent(genres);
-  if (topGenre.length > 20) topGenre = topGenre.substring(0, 18) + "...";
-  $("#statTopGenre").textContent = topGenre;
-  $("#statTopGenre").title = topGenre;
 }
 
 function renderGrid(group, gridId, emptyId) {
@@ -273,10 +192,8 @@ function renderGrid(group, gridId, emptyId) {
     if (currentFilter !== "all") {
       list = list.filter(b => b.status === currentFilter);
     }
-  } else if (group === "quiero_leer") {
+  } else {
     list = books.filter(b => b.status === "quiero_leer");
-  } else if (group === "abandonado") {
-    list = books.filter(b => b.status === "abandonado");
   }
 
   grid.innerHTML = "";
@@ -320,11 +237,7 @@ function buildCard(book) {
   }
   const flag = document.createElement("span");
   flag.className = "status-flag " + book.status;
-  if (book.status === "leido") flag.textContent = "Leído";
-  else if (book.status === "leyendo") flag.textContent = "Leyendo";
-  else if (book.status === "abandonado") flag.textContent = "Abandonado";
-  else flag.textContent = "Pendiente";
-  
+  flag.textContent = book.status === "leido" ? "Leído" : book.status === "leyendo" ? "Leyendo" : "Pendiente";
   cover.appendChild(flag);
   card.appendChild(cover);
 
@@ -357,13 +270,6 @@ function buildCard(book) {
     infoMain.appendChild(readDate);
   }
 
-  if (book.recommendation) {
-    const r = document.createElement("div");
-    r.className = "book-comments";
-    r.innerHTML = `<strong>Recomendado a:</strong> ${escapeHtml(book.recommendation)}`;
-    infoMain.appendChild(r);
-  }
-
   if (book.comments) {
     const c = document.createElement("div");
     c.className = "book-comments";
@@ -376,7 +282,7 @@ function buildCard(book) {
   const footer = document.createElement("div");
   footer.className = "book-footer";
 
-  if (book.status === "leido" || book.status === "leyendo") {
+  if (book.status !== "quiero_leer") {
     const label = document.createElement("label");
     label.className = "finished-toggle";
     const cb = document.createElement("input");
@@ -430,7 +336,7 @@ async function renderShelf() {
   try {
     const results = [];
     for (const author of seeds) {
-      const res = await fetch(`https://openlibrary.org/search.json?author=${encodeURIComponent(author)}&limit=6&fields=title,author_name,first_publish_year,publisher,subject,cover_i`);
+      const res = await fetch(`https://openlibrary.org/search.json?author=${encodeURIComponent(author)}&limit=6&fields=title,author_name,cover_i`);
       if (!res.ok) continue;
       const data = await res.json();
       (data.docs || []).forEach(d => results.push(d));
@@ -455,8 +361,6 @@ async function renderShelf() {
       const spine = document.createElement("div");
       spine.className = "spine";
       spine.style.setProperty("--tilt", (i % 2 === 0 ? "-1.5deg" : "1.5deg"));
-      spine.title = `Pulsa para añadir "${d.title}" a tu biblioteca`;
-
       if (d.cover_i) {
         spine.style.backgroundImage = `url(https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg)`;
       } else {
@@ -466,9 +370,6 @@ async function renderShelf() {
       info.className = "spine-info";
       info.innerHTML = `<span class="spine-title">${escapeHtml(d.title)}</span><span class="spine-sub">${escapeHtml((d.author_name || [])[0] || "")}</span>`;
       spine.appendChild(info);
-
-      spine.addEventListener("click", () => openModal(null, d));
-
       track.appendChild(spine);
     });
   } catch (e) {
@@ -541,15 +442,9 @@ function disconnectGit() {
 
 async function testAndConnectGit() {
   const token = $("#gitToken").value.trim();
-  let repo = $("#gitRepo").value.trim();
-  // Limpiar posibles barras extra que haya puesto el usuario al final del repo
-  repo = repo.replace(/\/+$/, '');
-  
-  let branch = $("#gitBranch").value.trim() || "main";
-  
-  let path = $("#gitPath").value.trim() || "books.json";
-  // Limpiar barra inicial si la puso
-  path = path.replace(/^\/+/, '');
+  const repo = $("#gitRepo").value.trim();
+  const branch = $("#gitBranch").value.trim() || "main";
+  const path = $("#gitPath").value.trim() || "books.json";
 
   if (!token || !repo) {
     showToast("Introduce el Token y el Repositorio");
@@ -563,11 +458,8 @@ async function testAndConnectGit() {
 
   try {
     const url = `https://api.github.com/repos/${repo}/contents/${path}?ref=${branch}`;
-    const getUrl = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
-    const res = await fetch(getUrl, {
-      headers: { 
-        "Authorization": `token ${token}`
-      }
+    const res = await fetch(url, {
+      headers: { "Authorization": `token ${token}` }
     });
 
     if (res.ok) {
@@ -584,26 +476,23 @@ async function testAndConnectGit() {
       connectBtn.textContent = originalText;
       connectBtn.disabled = false;
 
-      // Para no perder libros añadidos antes de conectar, mezclamos los locales nuevos
-      const githubBooksIds = new Set(parsedBooks.map(b => b.id));
-      const localNewBooks = books.filter(b => !githubBooksIds.has(b.id));
-      
-      books = [...parsedBooks, ...localNewBooks];
-      gitFileSha = sha;
-      gitConfig = { token, repo, branch, path };
-      localStorage.setItem(GIT_CONFIG_KEY, JSON.stringify(gitConfig));
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
-      
-      renderAll();
-      updateGitStatusUI("green");
-      closeGitModal();
-      
-      if (localNewBooks.length > 0) {
-        showToast(`¡Conectado! Se han cargado ${parsedBooks.length} libros y conservado ${localNewBooks.length} locales`);
-        // Como hemos fusionado datos locales nuevos, forzamos un guardado para subirlo a GitHub
-        saveBooks();
+      const confirmMsg = `El archivo ya existe en GitHub con ${parsedBooks.length} libros.\n\n¿Quieres IMPORTAR esos libros y sobrescribir tu lista local? (Pulsa ACEPTAR)\n\n¿O quieres SOBRESCRIBIR el archivo de GitHub con tus libros locales actuales? (Pulsa CANCELAR)`;
+      if (confirm(confirmMsg)) {
+        books = parsedBooks;
+        gitFileSha = sha;
+        gitConfig = { token, repo, branch, path };
+        localStorage.setItem(GIT_CONFIG_KEY, JSON.stringify(gitConfig));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
+        renderAll();
+        updateGitStatusUI("green");
+        closeGitModal();
+        showToast("¡Conectado! Libros importados de GitHub");
       } else {
-        showToast(`¡Conectado! Se han cargado ${books.length} libros de GitHub`);
+        gitConfig = { token, repo, branch, path };
+        localStorage.setItem(GIT_CONFIG_KEY, JSON.stringify(gitConfig));
+        await saveBooks();
+        closeGitModal();
+        showToast("¡Conectado! Archivo sobrescrito en GitHub");
       }
     } else if (res.status === 404) {
       gitConfig = { token, repo, branch, path };
@@ -633,21 +522,21 @@ async function testAndConnectGit() {
         closeGitModal();
         showToast("¡Conectado! Archivo creado en GitHub");
       } else {
-        throw new Error(`Fallo al crear archivo: Error ${createRes.status}`);
+        throw new Error("No se pudo crear el archivo en GitHub");
       }
     } else {
-      throw new Error(`Credenciales/Permisos: Error ${res.status}`);
+      throw new Error("Credenciales inválidas o sin permisos");
     }
   } catch (err) {
-    console.error("Error en testAndConnectGit:", err);
+    console.error(err);
     connectBtn.textContent = originalText;
     connectBtn.disabled = false;
-    showToast(`Error: ${err.message}. Revisa la consola (F12)`);
+    showToast("Error de conexión. Verifica tu Token y Repositorio.");
   }
 }
 
 /* ---------------- MODAL ---------------- */
-function openModal(bookId, seedData = null) {
+function openModal(bookId) {
   editingId = bookId || null;
   const overlay = $("#modalOverlay");
   const book = bookId ? books.find(b => b.id === bookId) : null;
@@ -657,57 +546,23 @@ function openModal(bookId, seedData = null) {
   $("#searchInput").value = "";
   $("#autocompleteList").hidden = true;
 
-  if (book) {
-    $("#titleInput").value = book.title || "";
-    $("#yearInput").value = book.year || "";
-    $("#authorInput").value = book.author || "";
-    $("#publisherInput").value = book.publisher || "";
-    $("#genreInput").value = book.genre || "";
-    const [readYear, readMonth] = (book.readDate || "").split("-");
-    $("#readMonthInput").value = readMonth || "";
-    $("#readYearInput").value = readYear || "";
-    $("#commentsInput").value = book.comments || "";
-    $("#recommendationInput").value = book.recommendation || "";
-    $("#coverUrlInput").value = "";
-    setCoverPreview(book.cover || "");
-    selectedStatus = book.status || "leido";
-    selectedRating = book.rating || 0;
-  } else if (seedData) {
-    $("#titleInput").value = seedData.title || "";
-    $("#yearInput").value = seedData.year || seedData.first_publish_year || "";
-    $("#authorInput").value = seedData.author || (seedData.author_name || [])[0] || "";
-    const pub = Array.isArray(seedData.publisher) ? seedData.publisher[0] : (seedData.publisher || "");
-    $("#publisherInput").value = pub || "";
-    const genre = Array.isArray(seedData.subject) ? seedData.subject[0] : (seedData.genre || seedData.subject || "");
-    $("#genreInput").value = genre || "";
-    $("#readMonthInput").value = "";
-    $("#readYearInput").value = "";
-    $("#commentsInput").value = "";
-    $("#recommendationInput").value = "";
-    $("#coverUrlInput").value = "";
-    const coverUrl = seedData.cover || (seedData.cover_i ? `https://covers.openlibrary.org/b/id/${seedData.cover_i}-M.jpg` : "");
-    setCoverPreview(coverUrl);
-    selectedStatus = "quiero_leer";
-    selectedRating = 0;
-  } else {
-    $("#titleInput").value = "";
-    $("#yearInput").value = "";
-    $("#authorInput").value = "";
-    $("#publisherInput").value = "";
-    $("#genreInput").value = "";
-    $("#readMonthInput").value = "";
-    $("#readYearInput").value = "";
-    $("#commentsInput").value = "";
-    $("#recommendationInput").value = "";
-    $("#coverUrlInput").value = "";
-    setCoverPreview("");
-    if (currentTab === "wishlist") selectedStatus = "quiero_leer";
-    else if (currentTab === "abandoned") selectedStatus = "abandonado";
-    else selectedStatus = "leido";
-    selectedRating = 0;
-  }
+  $("#titleInput").value = book?.title || "";
+  $("#yearInput").value = book?.year || "";
+  $("#authorInput").value = book?.author || "";
+  $("#publisherInput").value = book?.publisher || "";
+  $("#genreInput").value = book?.genre || "";
+  const [readYear, readMonth] = (book?.readDate || "").split("-");
+  $("#readMonthInput").value = readMonth || "";
+  $("#readYearInput").value = readYear || "";
+  $("#commentsInput").value = book?.comments || "";
+  $("#coverUrlInput").value = "";
 
+  setCoverPreview(book?.cover || "");
+
+  selectedStatus = book?.status || (currentTab === "wishlist" ? "quiero_leer" : "leido");
   updateStatusUI();
+
+  selectedRating = book?.rating || 0;
   updateStarsUI();
 
   overlay.hidden = false;
@@ -768,7 +623,6 @@ function saveFromModal() {
     rating: selectedStatus === "quiero_leer" ? 0 : selectedRating,
     readDate: selectedStatus === "quiero_leer" ? "" : readDate,
     comments: selectedStatus === "quiero_leer" ? "" : $("#commentsInput").value.trim(),
-    recommendation: selectedStatus === "quiero_leer" ? "" : $("#recommendationInput").value.trim(),
   };
 
   if (editingId) {
@@ -808,86 +662,23 @@ async function runSearch(q) {
   list.hidden = false;
   list.innerHTML = `<div class="ac-empty">Buscando...</div>`;
   try {
-    let combinedResults = [];
-    
-    // 1. Buscar en Google Books (suele tener mejores portadas y datos en español)
-    try {
-      const gbRes = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=5`);
-      if (gbRes.ok) {
-        const gbData = await gbRes.json();
-        if (gbData.items) {
-          gbData.items.forEach(item => {
-            const vol = item.volumeInfo;
-            if (!vol) return;
-            // Asegurarnos de usar https para las imágenes de Google
-            let coverUrl = vol.imageLinks?.thumbnail || vol.imageLinks?.smallThumbnail || "";
-            if (coverUrl) coverUrl = coverUrl.replace(/^http:/, "https:");
-            
-            combinedResults.push({
-              source: "google",
-              title: vol.title,
-              author: (vol.authors || [])[0] || "",
-              year: (vol.publishedDate || "").substring(0, 4),
-              publisher: vol.publisher || "",
-              genre: (vol.categories || [])[0] || "",
-              coverThumb: coverUrl, 
-              coverFull: coverUrl,
-              id: item.id
-            });
-          });
-        }
-      }
-    } catch (e) { console.error("Error Google Books:", e); }
-
-    // 2. Buscar en OpenLibrary como respaldo o para rellenar
-    if (combinedResults.length < 6) {
-      try {
-        const olRes = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=5&fields=title,author_name,first_publish_year,publisher,subject,cover_i,key`);
-        if (olRes.ok) {
-          const olData = await olRes.json();
-          (olData.docs || []).forEach(d => {
-            combinedResults.push({
-              source: "openlibrary",
-              title: d.title,
-              author: (d.author_name || [])[0] || "",
-              year: d.first_publish_year || "",
-              publisher: (d.publisher || [])[0] || "",
-              genre: (d.subject || [])[0] || "",
-              coverThumb: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-S.jpg` : "",
-              coverFull: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg` : "",
-              id: d.key
-            });
-          });
-        }
-      } catch (e) { console.error("Error OpenLibrary:", e); }
-    }
-
-    // Filtrar duplicados por título aproximado
-    const uniqueResults = [];
-    const seenTitles = new Set();
-    for (const res of combinedResults) {
-      const t = (res.title || "").toLowerCase().trim();
-      if (!seenTitles.has(t) && t !== "") {
-        seenTitles.add(t);
-        uniqueResults.push(res);
-      }
-      if (uniqueResults.length >= 8) break; // Máximo 8 resultados
-    }
-
-    if (uniqueResults.length === 0) {
+    const res = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=6&fields=title,author_name,first_publish_year,publisher,subject,cover_i`);
+    const data = await res.json();
+    const docs = data.docs || [];
+    if (docs.length === 0) {
       list.innerHTML = `<div class="ac-empty">Sin resultados. Puedes rellenar los campos a mano y añadir una foto.</div>`;
       return;
     }
-    
     list.innerHTML = "";
-    uniqueResults.forEach(d => {
+    docs.forEach(d => {
       const item = document.createElement("div");
       item.className = "ac-item";
+      const coverUrl = d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-S.jpg` : "";
       item.innerHTML = `
-        ${d.coverThumb ? `<img src="${d.coverThumb}" alt="">` : `<div style="width:32px;height:46px;background:var(--paper-deep);flex-shrink:0;"></div>`}
+        ${coverUrl ? `<img src="${coverUrl}" alt="">` : `<div style="width:32px;height:46px;background:var(--paper-deep);flex-shrink:0;"></div>`}
         <div class="ac-text">
           <div>${escapeHtml(d.title)}</div>
-          <div class="ac-author">${escapeHtml(d.author)} · ${d.year || "—"}</div>
+          <div class="ac-author">${escapeHtml((d.author_name || [])[0] || "Autor desconocido")} · ${d.first_publish_year || "—"}</div>
         </div>`;
       item.addEventListener("click", () => selectSearchResult(d));
       list.appendChild(item);
@@ -899,14 +690,12 @@ async function runSearch(q) {
 
 function selectSearchResult(d) {
   $("#titleInput").value = d.title || "";
-  $("#authorInput").value = d.author || "";
-  $("#yearInput").value = d.year || "";
-  $("#publisherInput").value = d.publisher || "";
-  $("#genreInput").value = d.genre || "";
-  if (d.coverFull) {
-    setCoverPreview(d.coverFull);
-  } else {
-    setCoverPreview("");
+  $("#authorInput").value = (d.author_name || [])[0] || "";
+  $("#yearInput").value = d.first_publish_year || "";
+  $("#publisherInput").value = (d.publisher || [])[0] || "";
+  $("#genreInput").value = (d.subject || [])[0] || "";
+  if (d.cover_i) {
+    setCoverPreview(`https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg`);
   }
   $("#autocompleteList").hidden = true;
   $("#searchInput").value = "";
