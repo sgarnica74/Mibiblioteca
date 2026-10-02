@@ -228,15 +228,15 @@ function renderAll() {
 
 function renderStats() {
   const readBooks = books.filter(b => b.status === "leido");
-  
+
   // 1. Total libros leídos
   $("#statTotalBooks").textContent = readBooks.length;
-  
+
   // 2. Leídos este año
   const currentYear = new Date().getFullYear().toString();
   const yearBooks = readBooks.filter(b => b.readDate && b.readDate.startsWith(currentYear));
   $("#statYearBooks").textContent = yearBooks.length;
-  
+
   // Función auxiliar para sacar el más frecuente
   const getMostFrequent = (arr) => {
     if (arr.length === 0) return "—";
@@ -259,7 +259,7 @@ function renderStats() {
   let topAuthor = getMostFrequent(authors);
   if (topAuthor.length > 20) topAuthor = topAuthor.substring(0, 18) + "...";
   $("#statTopAuthor").textContent = topAuthor;
-  $("#statTopAuthor").title = topAuthor; 
+  $("#statTopAuthor").title = topAuthor;
 
   // 4. Género favorito
   const genres = readBooks.map(b => b.genre).filter(Boolean);
@@ -329,7 +329,7 @@ function buildCard(book) {
   else if (book.status === "leyendo") flag.textContent = "Leyendo";
   else if (book.status === "abandonado") flag.textContent = "Abandonado";
   else flag.textContent = "Pendiente";
-  
+
   cover.appendChild(flag);
   card.appendChild(cover);
 
@@ -493,7 +493,7 @@ function formatReadDate(value) {
   const [year, month] = (value || "").split("-");
   if (!year || !month) return "";
   const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio",
-                 "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+    "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
   const idx = Number(month) - 1;
   if (idx < 0 || idx > 11) return value;
   return `Leído en ${meses[idx]} de ${year}`;
@@ -795,6 +795,15 @@ async function deleteCurrent() {
 }
 
 /* ---------------- BÚSQUEDA / AUTOCOMPLETE ---------------- */
+
+// Detecta si la cadena es un ISBN (10 o 13 dígitos, con o sin guiones/espacios)
+function detectIsbn(q) {
+  const cleaned = q.replace(/[-\s]/g, "");
+  if (/^\d{13}$/.test(cleaned)) return cleaned;           // ISBN-13
+  if (/^\d{9}[\dXx]$/.test(cleaned)) return cleaned;     // ISBN-10
+  return null;
+}
+
 function handleSearchInput(e) {
   const q = e.target.value.trim();
   clearTimeout(searchDebounce);
@@ -808,63 +817,148 @@ function handleSearchInput(e) {
 async function runSearch(q) {
   const list = $("#autocompleteList");
   list.hidden = false;
-  list.innerHTML = `<div class="ac-empty">Buscando...</div>`;
+
+  const isbn = detectIsbn(q);
+  const searchHint = isbn
+    ? `<span style="font-size:0.75rem;color:var(--accent)">🔢 ISBN detectado: ${isbn}</span>`
+    : "";
+  list.innerHTML = `<div class="ac-empty">Buscando… ${searchHint}</div>`;
+
   try {
     let combinedResults = [];
-    
-    // 1. Buscar en Google Books (suele tener mejores portadas y datos en español)
+
+    // ── FUENTE 1: Google Books ────────────────────────────────────────────────
+    // Soporta búsqueda libre y también isbn:XXXXXXXXX directamente.
     try {
-      const gbRes = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=5`);
-      if (gbRes.ok) {
-        const gbData = await gbRes.json();
-        if (gbData.items) {
-          gbData.items.forEach(item => {
+      const gbQuery = isbn ? `isbn:${isbn}` : q;
+      const gbRes = await fetch(
+        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(gbQuery)}&maxResults=10&langRestrict=es`
+      );
+      // Si no hay resultados en español, reintentar sin restricción de idioma
+      let gbData = gbRes.ok ? await gbRes.json() : {};
+      if (!gbData.items && !isbn) {
+        const gbRes2 = await fetch(
+          `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=10`
+        );
+        if (gbRes2.ok) gbData = await gbRes2.json();
+      }
+      (gbData.items || []).forEach(item => {
+        const vol = item.volumeInfo;
+        if (!vol || !vol.title) return;
+        let coverUrl = vol.imageLinks?.thumbnail || vol.imageLinks?.smallThumbnail || "";
+        if (coverUrl) coverUrl = coverUrl.replace(/^http:/, "https:");
+        // Portada de mayor resolución: sustituir zoom=1 por zoom=2
+        const coverFull = coverUrl ? coverUrl.replace("zoom=1", "zoom=2") : "";
+        const isbnList = vol.industryIdentifiers || [];
+        const bookIsbn =
+          (isbnList.find(i => i.type === "ISBN_13") || isbnList.find(i => i.type === "ISBN_10") || {}).identifier || "";
+        combinedResults.push({
+          source: "google",
+          title: vol.title,
+          author: (vol.authors || [])[0] || "",
+          year: (vol.publishedDate || "").substring(0, 4),
+          publisher: vol.publisher || "",
+          genre: (vol.categories || [])[0] || "",
+          isbn: bookIsbn,
+          coverThumb: coverUrl,
+          coverFull: coverFull || coverUrl,
+          id: item.id,
+        });
+      });
+    } catch (e) { console.error("Error Google Books:", e); }
+
+    // ── FUENTE 2: Open Library — búsqueda general ─────────────────────────────
+    try {
+      const olQuery = isbn ? `isbn:${isbn}` : q;
+      const olRes = await fetch(
+        `https://openlibrary.org/search.json?q=${encodeURIComponent(olQuery)}&limit=10&fields=title,author_name,first_publish_year,publisher,subject,cover_i,isbn,key`
+      );
+      if (olRes.ok) {
+        const olData = await olRes.json();
+        (olData.docs || []).forEach(d => {
+          if (!d.title) return;
+          const firstIsbn = (d.isbn || [])[0] || "";
+          combinedResults.push({
+            source: "openlibrary",
+            title: d.title,
+            author: (d.author_name || [])[0] || "",
+            year: d.first_publish_year || "",
+            publisher: (d.publisher || [])[0] || "",
+            genre: (d.subject || [])[0] || "",
+            isbn: firstIsbn,
+            coverThumb: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-S.jpg` : "",
+            coverFull: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg` : "",
+            id: d.key,
+          });
+        });
+      }
+    } catch (e) { console.error("Error Open Library:", e); }
+
+    // ── FUENTE 3: Open Library — lookup directo por ISBN ──────────────────────
+    // Solo se usa cuando se detecta un ISBN; devuelve metadatos muy completos.
+    if (isbn) {
+      try {
+        const olIsbnRes = await fetch(
+          `https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`
+        );
+        if (olIsbnRes.ok) {
+          const olIsbnData = await olIsbnRes.json();
+          const key = `ISBN:${isbn}`;
+          const book = olIsbnData[key];
+          if (book) {
+            const coverId = book.cover?.medium || book.cover?.large || book.cover?.small || "";
+            combinedResults.push({
+              source: "ol-isbn",
+              title: book.title || "",
+              author: (book.authors || [])[0]?.name || "",
+              year: (book.publish_date || "").slice(-4),
+              publisher: (book.publishers || [])[0]?.name || "",
+              genre: (book.subjects || [])[0]?.name || "",
+              isbn,
+              coverThumb: book.cover?.small || "",
+              coverFull: book.cover?.large || book.cover?.medium || "",
+              id: book.key || isbn,
+            });
+          }
+        }
+      } catch (e) { console.error("Error Open Library ISBN:", e); }
+    }
+
+    // ── FUENTE 4: Google Books — fallback sin restricción idioma ──────────────
+    // Búsqueda complementaria con términos en inglés si hay pocos resultados
+    if (!isbn && combinedResults.length < 10) {
+      try {
+        const gbRes3 = await fetch(
+          `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=8&orderBy=relevance`
+        );
+        if (gbRes3.ok) {
+          const gbData3 = await gbRes3.json();
+          (gbData3.items || []).forEach(item => {
             const vol = item.volumeInfo;
-            if (!vol) return;
-            // Asegurarnos de usar https para las imágenes de Google
+            if (!vol || !vol.title) return;
             let coverUrl = vol.imageLinks?.thumbnail || vol.imageLinks?.smallThumbnail || "";
             if (coverUrl) coverUrl = coverUrl.replace(/^http:/, "https:");
-            
             combinedResults.push({
-              source: "google",
+              source: "google2",
               title: vol.title,
               author: (vol.authors || [])[0] || "",
               year: (vol.publishedDate || "").substring(0, 4),
               publisher: vol.publisher || "",
               genre: (vol.categories || [])[0] || "",
-              coverThumb: coverUrl, 
-              coverFull: coverUrl,
-              id: item.id
+              isbn: "",
+              coverThumb: coverUrl,
+              coverFull: coverUrl ? coverUrl.replace("zoom=1", "zoom=2") : "",
+              id: item.id + "_2",
             });
           });
         }
-      }
-    } catch (e) { console.error("Error Google Books:", e); }
-
-    // 2. Buscar en OpenLibrary como respaldo o para rellenar
-    if (combinedResults.length < 6) {
-      try {
-        const olRes = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=5&fields=title,author_name,first_publish_year,publisher,subject,cover_i,key`);
-        if (olRes.ok) {
-          const olData = await olRes.json();
-          (olData.docs || []).forEach(d => {
-            combinedResults.push({
-              source: "openlibrary",
-              title: d.title,
-              author: (d.author_name || [])[0] || "",
-              year: d.first_publish_year || "",
-              publisher: (d.publisher || [])[0] || "",
-              genre: (d.subject || [])[0] || "",
-              coverThumb: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-S.jpg` : "",
-              coverFull: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg` : "",
-              id: d.key
-            });
-          });
-        }
-      } catch (e) { console.error("Error OpenLibrary:", e); }
+      } catch (e) { console.error("Error Google Books (fallback):", e); }
     }
 
-    // Filtrar duplicados por título aproximado
+    // ── Deduplicar por título normalizado ────────────────────────────────────
+    // Si hay resultado de búsqueda por ISBN (ol-isbn), lo ponemos primero
+    combinedResults.sort((a) => (a.source === "ol-isbn" ? -1 : 0));
+
     const uniqueResults = [];
     const seenTitles = new Set();
     for (const res of combinedResults) {
@@ -873,30 +967,100 @@ async function runSearch(q) {
         seenTitles.add(t);
         uniqueResults.push(res);
       }
-      if (uniqueResults.length >= 8) break; // Máximo 8 resultados
+      if (uniqueResults.length >= 20) break; // Máximo 20 resultados
     }
 
     if (uniqueResults.length === 0) {
       list.innerHTML = `<div class="ac-empty">Sin resultados. Puedes rellenar los campos a mano y añadir una foto.</div>`;
+      list.appendChild(buildExternalSearchFooter(q));
       return;
     }
-    
+
     list.innerHTML = "";
+
+    // Badge de origen para ayudar a identificar la fuente
+    const sourceBadge = {
+      "google": { label: "Google Books", color: "#4285F4" },
+      "google2": { label: "Google Books", color: "#4285F4" },
+      "openlibrary": { label: "Open Library", color: "#e57300" },
+      "ol-isbn": { label: "ISBN exacto", color: "#2e7d32" },
+    };
+
     uniqueResults.forEach(d => {
       const item = document.createElement("div");
       item.className = "ac-item";
+      const badge = sourceBadge[d.source] || { label: d.source, color: "#666" };
+      const isbnTag = d.isbn ? `<span class="ac-isbn">ISBN ${d.isbn}</span>` : "";
       item.innerHTML = `
-        ${d.coverThumb ? `<img src="${d.coverThumb}" alt="">` : `<div style="width:32px;height:46px;background:var(--paper-deep);flex-shrink:0;"></div>`}
+        ${d.coverThumb
+          ? `<img src="${d.coverThumb}" alt="" loading="lazy">`
+          : `<div style="width:32px;height:46px;background:var(--paper-deep);flex-shrink:0;border-radius:3px;"></div>`}
         <div class="ac-text">
           <div>${escapeHtml(d.title)}</div>
           <div class="ac-author">${escapeHtml(d.author)} · ${d.year || "—"}</div>
+          <div class="ac-meta">
+            <span class="ac-source-badge" style="background:${badge.color}">${badge.label}</span>
+            ${isbnTag}
+          </div>
         </div>`;
       item.addEventListener("click", () => selectSearchResult(d));
       list.appendChild(item);
     });
+
+    // Pie del desplegable: enlaces a tiendas externas
+    list.appendChild(buildExternalSearchFooter(q));
+
   } catch (e) {
+    console.error("Error en runSearch:", e);
     list.innerHTML = `<div class="ac-empty">No se pudo buscar. Rellena los campos a mano.</div>`;
+    list.appendChild(buildExternalSearchFooter(q));
   }
+}
+
+// Construye el pie de búsqueda externa que aparece siempre al final del
+// desplegable. Ni Casa del Libro ni Amazon tienen API pública accesible desde
+// el navegador (CORS bloqueado / requieren credenciales de afiliado), así que
+// abrimos sus buscadores en una pestaña nueva con la consulta ya escrita.
+function buildExternalSearchFooter(q) {
+  const qs = encodeURIComponent(q);
+  const shortQ = escapeHtml(q.length > 32 ? q.slice(0, 30) + '…' : q);
+
+  const stores = [
+    {
+      name: "Casa del Libro",
+      url: `https://www.casadellibro.com/busqueda-generica?q=${qs}`,
+      color: "#b35e00",
+      icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
+    },
+    {
+      name: "Amazon",
+      url: `https://www.amazon.es/s?k=${qs}&i=stripbooks`,
+      color: "#e47911",
+      icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>`,
+    },
+  ];
+
+  const footer = document.createElement("div");
+  footer.className = "ac-ext-footer";
+
+  const label = document.createElement("span");
+  label.className = "ac-ext-label";
+  label.textContent = `«${shortQ}» en:`;
+  footer.appendChild(label);
+
+  stores.forEach(store => {
+    const link = document.createElement("a");
+    link.href = store.url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.className = "ac-ext-link";
+    link.style.setProperty("--store-color", store.color);
+    link.innerHTML = `${store.icon} ${store.name}`;
+    link.addEventListener("click", (e) => e.stopPropagation());
+    footer.appendChild(link);
+  });
+
+  return footer;
 }
 
 function selectSearchResult(d) {
