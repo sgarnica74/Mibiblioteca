@@ -137,6 +137,13 @@ async function saveBooks() {
     return false;
   }
 
+  // Aviso preventivo: por encima de 1 MB, la API de GitHub deja de devolver
+  // el contenido del archivo al leerlo, y la app no podría volver a cargarlo.
+  const payloadSize = new Blob([JSON.stringify(books)]).size;
+  if (payloadSize > 900 * 1024) {
+    showToast("Aviso: la biblioteca pesa mucho (fotos muy grandes). Usa fotos más ligeras.");
+  }
+
   updateGitStatusUI("yellow");
   try {
     // 1. Releer el sha justo antes de escribir: es la base de la protección
@@ -908,12 +915,35 @@ function selectSearchResult(d) {
 }
 
 /* ---------------- FOTO DE PORTADA (cámara) ---------------- */
+// Tamaño máximo (en ancho) y calidad para las portadas subidas por el usuario.
+// Sin esto, una foto de cámara (varios MB) acababa embebida tal cual en el
+// books.json, que GitHub deja de poder leer a partir de 1 MB de tamaño total.
+const COVER_MAX_WIDTH = 500;
+const COVER_JPEG_QUALITY = 0.72;
+
 function handleCameraInput(e) {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = () => setCoverPreview(reader.result);
+  reader.onload = () => compressImage(reader.result, setCoverPreview);
   reader.readAsDataURL(file);
+}
+
+// Redimensiona y comprime una imagen (data URL) antes de guardarla, para que
+// las portadas nunca disparen el tamaño del books.json.
+function compressImage(dataUrl, onDone) {
+  const img = new Image();
+  img.onload = () => {
+    const scale = Math.min(1, COVER_MAX_WIDTH / img.width);
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(img.width * scale);
+    canvas.height = Math.round(img.height * scale);
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    onDone(canvas.toDataURL("image/jpeg", COVER_JPEG_QUALITY));
+  };
+  img.onerror = () => onDone(dataUrl); // si algo falla, seguimos con la original
+  img.src = dataUrl;
 }
 
 /* ---------------- TOAST ---------------- */
