@@ -476,24 +476,17 @@ async function testAndConnectGit() {
       connectBtn.textContent = originalText;
       connectBtn.disabled = false;
 
-      const confirmMsg = `El archivo ya existe en GitHub con ${parsedBooks.length} libros.\n\n¿Quieres IMPORTAR esos libros y sobrescribir tu lista local? (Pulsa ACEPTAR)\n\n¿O quieres SOBRESCRIBIR el archivo de GitHub con tus libros locales actuales? (Pulsa CANCELAR)`;
-      if (confirm(confirmMsg)) {
-        books = parsedBooks;
-        gitFileSha = sha;
-        gitConfig = { token, repo, branch, path };
-        localStorage.setItem(GIT_CONFIG_KEY, JSON.stringify(gitConfig));
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
-        renderAll();
-        updateGitStatusUI("green");
-        closeGitModal();
-        showToast("¡Conectado! Libros importados de GitHub");
-      } else {
-        gitConfig = { token, repo, branch, path };
-        localStorage.setItem(GIT_CONFIG_KEY, JSON.stringify(gitConfig));
-        await saveBooks();
-        closeGitModal();
-        showToast("¡Conectado! Archivo sobrescrito en GitHub");
-      }
+      // GitHub es la única fuente de la verdad: si el archivo ya existe allí,
+      // siempre se importa. Nunca se sobrescribe sin querer con datos locales.
+      books = parsedBooks;
+      gitFileSha = sha;
+      gitConfig = { token, repo, branch, path };
+      localStorage.setItem(GIT_CONFIG_KEY, JSON.stringify(gitConfig));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
+      renderAll();
+      updateGitStatusUI("green");
+      closeGitModal();
+      showToast(`¡Conectado! ${books.length} libros importados de GitHub`);
     } else if (res.status === 404) {
       gitConfig = { token, repo, branch, path };
       localStorage.setItem(GIT_CONFIG_KEY, JSON.stringify(gitConfig));

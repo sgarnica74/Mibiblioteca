@@ -32,9 +32,6 @@
     <button class="tab" data-tab="wishlist" role="tab" aria-selected="false">
       <span class="tab-index">II</span> Quiero leer
     </button>
-    <button class="tab" data-tab="abandoned" role="tab" aria-selected="false">
-      <span class="tab-index">III</span> Abandonados
-    </button>
   </nav>
 
   <div class="controls-bar">
@@ -61,11 +58,6 @@
   <section class="tab-panel" id="panel-wishlist">
     <div class="grid" id="gridWishlist"></div>
     <p class="empty-state" id="emptyWishlist" hidden>Tu lista de deseos está vacía. Añade libros que quieras leer más adelante.</p>
-  </section>
-
-  <section class="tab-panel" id="panel-abandoned">
-    <div class="grid" id="gridAbandoned"></div>
-    <p class="empty-state" id="emptyAbandoned" hidden>No tienes ningún libro abandonado.</p>
   </section>
 </main>
 
@@ -135,7 +127,6 @@
         <button type="button" class="status-opt" data-status="quiero_leer">Quiero leer</button>
         <button type="button" class="status-opt" data-status="leyendo">Leyendo</button>
         <button type="button" class="status-opt" data-status="leido">Leído</button>
-        <button type="button" class="status-opt" data-status="abandonado">Abandonado</button>
       </div>
     </div>
 
@@ -180,11 +171,6 @@
       <textarea id="commentsInput" rows="3" placeholder="¿Qué te ha parecido?"></textarea>
     </div>
 
-    <div class="field">
-      <label for="recommendationInput">Recomendado ... <span class="optional">(opcional)</span></label>
-      <input type="text" id="recommendationInput" placeholder="Ej: Amantes del misterio, mi hermano, etc.">
-    </div>
-
     <div class="modal-actions">
       <button class="btn-secondary" id="btnDelete" hidden>Eliminar libro</button>
       <button class="btn-primary" id="btnSave">Guardar</button>
@@ -198,7 +184,7 @@
     <button class="modal-close" id="gitModalClose" aria-label="Cerrar">&times;</button>
     <h2 id="gitModalTitle">Sincronización con GitHub</h2>
     
-    <p class="modal-help-text">Guarda tu biblioteca directamente en un repositorio de GitHub. Si borras el historial de tu navegador, solo tendrás que volver a introducir tus credenciales aquí para recuperar todos tus libros.</p>
+    <p class="modal-help-text">Guarda tu biblioteca directamente en un repositorio de GitHub, que pasa a ser tu única fuente de datos. Si el archivo ya existe allí, se importará automáticamente (nunca se sobrescribirá sin querer con datos locales). Si borras el historial de tu navegador, solo tendrás que volver a introducir tus credenciales aquí para recuperar todos tus libros.</p>
     
     <div class="field">
       <label for="gitToken">Token de acceso personal (PAT)</label>
@@ -231,32 +217,6 @@
 </div>
 
 <div class="toast" id="toast" hidden></div>
-
-<section class="stats-panel" id="statsPanel">
-  <h2>Tus Estadísticas de Lectura</h2>
-  <div class="stats-grid">
-    <div class="stat-card">
-      <span class="stat-icon">📚</span>
-      <div class="stat-value" id="statTotalBooks">0</div>
-      <div class="stat-label">Libros Leídos</div>
-    </div>
-    <div class="stat-card">
-      <span class="stat-icon">🗓️</span>
-      <div class="stat-value" id="statYearBooks">0</div>
-      <div class="stat-label">Leídos este año</div>
-    </div>
-    <div class="stat-card">
-      <span class="stat-icon">🏆</span>
-      <div class="stat-value" id="statTopAuthor">—</div>
-      <div class="stat-label">Autor más leído</div>
-    </div>
-    <div class="stat-card">
-      <span class="stat-icon">⭐</span>
-      <div class="stat-value" id="statTopGenre">—</div>
-      <div class="stat-label">Género Favorito</div>
-    </div>
-  </div>
-</section>
 
 <footer class="shelf-footer-main">
   <div class="footer-content">
