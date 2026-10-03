@@ -443,6 +443,7 @@
     "status": "quiero_leer",
     "rating": 0,
     "readDate": "",
-    "comments": ""
+    "comments": "",
+    "recommendation": ""
   }
 ]
