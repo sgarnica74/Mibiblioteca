@@ -207,9 +207,10 @@
     "genre": "Fantasy fiction",
     "cover": "https://covers.openlibrary.org/b/id/12820198-M.jpg",
     "status": "leido",
-    "rating": 0,
+    "rating": 1,
     "readDate": "2026-07",
-    "comments": "Club de classics: bufff, una paraoina q encara no entenc com es un classic…potser no l’he entes…"
+    "comments": "bufff, una paraoina q encara no entenc com es un classic…potser no l’he entes…despres de la trobada del club he entes la metafora",
+    "recommendation": "Club de classics"
   },
   {
     "id": "b_mu33l025_ul3v3",
