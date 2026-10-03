@@ -314,9 +314,10 @@
     "genre": "",
     "cover": "",
     "status": "leido",
-    "rating": 0,
+    "rating": 2,
     "readDate": "2025-09",
-    "comments": "Recomanat x Marta: bonic"
+    "comments": ":bonic",
+    "recommendation": "Marta"
   },
   {
     "id": "b_mu340jnz_25vu7",
