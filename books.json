@@ -480,5 +480,19 @@
     "readDate": "",
     "comments": "",
     "recommendation": ""
+  },
+  {
+    "id": "b_mvf18e9h_8waz9",
+    "title": "Voy a traicionarte",
+    "year": "2022",
+    "author": "Ruta Sepetys",
+    "publisher": "Maeva Ediciones",
+    "genre": "Novela sobre la dictadura en Rumania",
+    "cover": "https://covers.openlibrary.org/b/id/13938700-L.jpg",
+    "status": "leido",
+    "rating": 4,
+    "readDate": "2024-05",
+    "comments": "M’ha encantat, historia sobre la dictadura de Rumania i la caiguda de Ceausescu…intriga fins al final",
+    "recommendation": ""
   }
 ]
